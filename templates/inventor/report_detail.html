@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Hisobot - {{ report.report_type }}{% endblock %}
+{% load math_filters %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            {{ report.get_report_type_display }} Hisobot
+        </h2>
+        <div>
+            <a href="{% url 'inventor:export_report_excel' report.pk %}" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Excel ga yuklab olish
+            </a>
+            <a href="{% url 'inventor:report_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Orqaga
+            </a>
+        </div>
+    </div>
+
+    <!-- Hisobot ma'lumotlari -->
+    <div class="row g-4">
+        <!-- Asosiy statistikalar -->
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h3 class="section-title">Hisobot ma'lumotlari</h3>
+                
+                <!-- Hisobot parametrlari -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Hisobot parametrlari</h5>
+                                <p><strong>Sana oralig'i:</strong> {{ report.start_date|date:"d.m.Y" }} - {{ report.end_date|date:"d.m.Y" }}</p>
+                                <p><strong>Yaratilgan sana:</strong> {{ report.generated_at|date:"d.m.Y H:i" }}</p>
+                                <p><strong>Yaratuvchi:</strong> {{ report.user.username|default:"Sistema" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Asosiy ko'rsatkichlar</h5>
+                                <p><strong>Tranzaksiyalar soni:</strong> {{ report_data.total_transactions|default:"0" }}</p>
+                                <p><strong>Jami daromad:</strong> {{ report_data.total_income|default:"0"|floatformat:0 }} so'm</p>
+                                <p><strong>Hisobot turi:</strong> {{ report.get_report_type_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tranzaksiyalar jadvali -->
+                <h4 class="mb-3">Tranzaksiyalar</h4>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Sana</th>
+                                <th>Mahsulot</th>
+                                <th>Turi</th>
+                                <th>Miqdor</th>
+                                <th>Summa</th>
+                                <th>Foydalanuvchi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"d.m.Y H:i" }}</td>
+                                <td>{{ transaction.product.name }}</td>
+                                <td>
+                                    {% if transaction.transaction_type == 'IN' %}
+                                        <span class="badge bg-success">Kirim</span>
+                                    {% elif transaction.transaction_type == 'OUT_SALE' %}
+                                        <span class="badge bg-primary">Sotuv</span>
+                                    {% elif transaction.transaction_type == 'OUT_DAMAGED' %}
+                                        <span class="badge bg-danger">Buzilgan</span>
+                                    {% elif transaction.transaction_type == 'OUT_EXPIRED' %}
+                                        <span class="badge bg-warning">Muddati o'tgan</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.quantity }}</td>
+                                <td>
+                                    {% if transaction.product.price %}
+                                        {{ transaction.quantity|multiply:transaction.product.price|floatformat:0 }} so'm
+                                    {% else %}
+                                        0 so'm
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.user.username }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">
+                                    Tranzaksiyalar mavjud emas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistika va grafiklar -->
+        <div class="col-lg-4">
+            <!-- Tranzaksiya turlari bo'yicha -->
+            <div class="table-container">
+                <h3 class="section-title">Tranzaksiya turlari</h3>
+                <canvas id="transactionTypesChart" height="200"></canvas>
+            </div>
+
+            <!-- Eng ko'p sotilgan mahsulotlar -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">Eng ko'p sotilgan mahsulotlar</h3>
+                <div class="list-group">
+                    {% for product in report_data.top_products|slice:":5" %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ product.product_name }}</h6>
+                            <span class="badge bg-primary">{{ product.total_sold|floatformat:0 }}</span>
+                        </div>
+                        <small class="text-muted">Sotilgan: {{ product.total_sold|floatformat:0 }} dona</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        Ma'lumotlar mavjud emas
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Qo'shimcha statistikalar -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">Qo'shimcha statistikalar</h3>
+                <div class="list-group">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Kunlik o'rtacha sotuv
+                        <span class="badge bg-primary rounded-pill">
+                            {% if days_count and report_data.total_income %}
+                                {{ report_data.total_income|div:days_count|floatformat:0 }} so'm
+                            {% else %}
+                                0 so'm
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        O'rtacha chek
+                        <span class="badge bg-success rounded-pill">
+                            {% if report_data.total_transactions and report_data.total_income %}
+                                {{ report_data.total_income|div:report_data.total_transactions|floatformat:0 }} so'm
+                            {% else %}
+                                0 so'm
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Faol foydalanuvchilar
+                        <span class="badge bg-info rounded-pill">
+                            {{ active_users_count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tranzaksiya turlari grafigi
+    const ctx = document.getElementById('transactionTypesChart').getContext('2d');
+    
+    // Ma'lumotlarni Django template dan o'tkazish
+    const transactionTypesData = {{ report_data.transaction_by_type|safe }};
+    
+    // Chart uchun ma'lumotlarni tayyorlash
+    const labels = [];
+    const data = [];
+    const backgroundColors = ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40', '#9966ff'];
+
+    transactionTypesData.forEach((item, index) => {
+        let typeName = '';
+        switch(item.transaction_type) {
+            case 'IN':
+                typeName = 'Kirim';
+                break;
+            case 'OUT_SALE':
+                typeName = 'Sotuv';
+                break;
+            case 'OUT_DAMAGED':
+                typeName = 'Buzilgan';
+                break;
+            case 'OUT_EXPIRED':
+                typeName = 'Muddati o\'tgan';
+                break;
+            default:
+                typeName = item.transaction_type;
+        }
+        labels.push(typeName);
+        data.push(item.count);
+    });
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.table-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.section-title {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+}
+.list-group-item:last-child {
+    border-bottom: none;
+}
+.badge {
+    font-size: 0.8em;
+}
+.card {
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

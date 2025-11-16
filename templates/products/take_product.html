@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Mahsulot Olish - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-cart-arrow-down me-2"></i>
+                        Mahsulot Olish
+                    </h2>
+                    <a href="{% url 'users:seller_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Orqaga
+                    </a>
+                </div>
+
+                <!-- Mahsulot ma'lumotlari -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4 class="card-title">{{ product.name }}</h4>
+                                <p class="card-text text-muted">{{ product.category.name }}</p>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Narx:</strong> {{ product.price|floatformat:0 }} so'm
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Omborda:</strong> 
+                                        <span class="badge {% if product.stock_quantity > 10 %}bg-success{% elif product.stock_quantity > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ product.stock_quantity }} {{ product.get_unit_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 100px;">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px; width: 100px;">
+                                        <i class="fas fa-box-open fa-2x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Xatolik xabarlari -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Olish formasi -->
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post" id="takeProductForm">
+                            {% csrf_token %}
+                            
+                            <div class="row g-3">
+                                <!-- Miqdor -->
+                                <div class="col-md-6">
+                                    <label for="quantity" class="form-label">Miqdor *</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="quantity" 
+                                           name="quantity" 
+                                           min="1" 
+                                           max="{{ product.stock_quantity }}"
+                                           required
+                                           oninput="updateTotal()">
+                                    <div class="form-text">
+                                        Maksimal: {{ product.stock_quantity }} {{ product.get_unit_display }}
+                                    </div>
+                                </div>
+
+                                <!-- To'lov turi -->
+                                <div class="col-md-6">
+                                    <label for="payment_type" class="form-label">To'lov turi *</label>
+                                    <select class="form-select" id="payment_type" name="payment_type" required onchange="toggleCustomerName()">
+                                        <option value="">Tanlang</option>
+                                        <option value="CASH">Naqd to'lov</option>
+                                        <option value="DEBT">Qarz</option>
+                                    </select>
+                                </div>
+
+                                <!-- Xaridor ismi (qarz uchun) -->
+                                <div class="col-12" id="customerNameField" style="display: none;">
+                                    <label for="customer_name" class="form-label">Xaridor ismi *</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="customer_name" 
+                                           name="customer_name" 
+                                           placeholder="Xaridorning ismini kiriting">
+                                    <div class="form-text">Qarz berilayotganda xaridor ismini kiritish majburiy</div>
+                                </div>
+
+                                <!-- Umumiy summa -->
+                                <div class="col-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Umumiy summa</h6>
+                                            <div id="totalAmount">
+                                                <p class="text-muted">Miqdor kiriting</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ogohlantirish -->
+                                {% if product.stock_quantity <= 10 %}
+                                <div class="col-12">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Diqqat!</strong> Mahsulot zaxirasi kam qolgan.
+                                        {% if product.stock_quantity == 0 %}
+                                            <strong>Omborda mahsulot qolmagan!</strong>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Tasdiqlash tugmasi -->
+                                <div class="col-12">
+                                    <div class="d-grid">
+                                        <button type="submit" 
+                                                class="btn btn-primary btn-lg" 
+                                                id="submitBtn"
+                                                {% if product.stock_quantity == 0 %}disabled{% endif %}>
+                                            <i class="fas fa-check me-2"></i>
+                                            Mahsulotni Olish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dastlabki holatni yangilash
+    updateTotal();
+    toggleCustomerName();
+});
+
+function updateTotal() {
+    const quantity = document.getElementById('quantity').value;
+    const price = {{ product.price|default:0 }};
+    const totalAmountElement = document.getElementById('totalAmount');
+    
+    if (quantity && price) {
+        const total = quantity * price;
+        totalAmountElement.innerHTML = `
+            <h4 class="text-success">${total.toLocaleString('ru-RU')} so'm</h4>
+            <small class="text-muted">${quantity} × ${price.toLocaleString('ru-RU')} so'm</small>
+        `;
+    } else {
+        totalAmountElement.innerHTML = '<p class="text-muted">Miqdor kiriting</p>';
+    }
+}
+
+function toggleCustomerName() {
+    const paymentType = document.getElementById('payment_type').value;
+    const customerNameField = document.getElementById('customerNameField');
+    const customerNameInput = document.getElementById('customer_name');
+    
+    if (paymentType === 'DEBT') {
+        customerNameField.style.display = 'block';
+        customerNameInput.required = true;
+    } else {
+        customerNameField.style.display = 'none';
+        customerNameInput.required = false;
+    }
+}
+
+// Formani yuborishdan oldin tekshirish
+document.getElementById('takeProductForm').addEventListener('submit', function(e) {
+    const quantity = parseInt(document.getElementById('quantity').value);
+    const maxQuantity = {{ product.stock_quantity }};
+    const paymentType = document.getElementById('payment_type').value;
+    const customerName = document.getElementById('customer_name').value;
+    
+    if (quantity > maxQuantity) {
+        e.preventDefault();
+        alert(`Kiritilgan miqdor (${quantity}) ombordagi miqdordan (${maxQuantity}) ko'p!`);
+        return false;
+    }
+    
+    if (paymentType === 'DEBT' && !customerName.trim()) {
+        e.preventDefault();
+        alert('Qarz berilayotganda xaridor ismini kiritish majburiy!');
+        return false;
+    }
+    
+    // Tasdiqlash
+    const productName = "{{ product.name }}";
+    const confirmMessage = `Mahsulot: ${productName}\nMiqdor: ${quantity}\nJami: ${(quantity * {{ product.price|default:0 }}).toLocaleString('ru-RU')} so'm\n\nTasdiqlaysizmi?`;
+    
+    if (!confirm(confirmMessage)) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+
+<style>
+.table-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.section-title {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.card {
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+}
+</style>
+{% endblock %}

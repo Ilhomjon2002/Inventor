@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Omborlar Ro'yxati{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">Omborlar</h2>
+        {% if user.userrole.role == 'ADMIN' %}
+        <a href="{% url 'inventor:warehouse_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Yangi ombor
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        {% for warehouse in warehouses %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ warehouse.name }}</h5>
+                        <span class="badge bg-primary">{{ warehouse.get_total_products }} mahsulot</span>
+                    </div>
+                    <p class="card-text text-muted">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ warehouse.location }}
+                    </p>
+                    <div class="mb-3">
+                        <small class="text-muted">Umumiy qiymati: {{ warehouse.get_total_value|floatformat:0 }} so'm</small>
+                    </div>
+                    <div class="btn-group w-100">
+                        <a href="{% url 'inventor:warehouse_stock' warehouse.pk %}" class="btn btn-outline-primary">
+                            <i class="fas fa-boxes me-1"></i>Zaxira
+                        </a>
+                        <a href="{% url 'inventor:warehouse_detail' warehouse.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-eye me-1"></i>Ko'rish
+                        </a>
+                        {% if user.userrole.role == 'ADMIN' %}
+                        <a href="{% url 'inventor:warehouse_edit' warehouse.pk %}" class="btn btn-outline-warning">
+                            <i class="fas fa-edit me-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted py-5">
+            <i class="fas fa-warehouse fa-3x mb-3"></i>
+            <p>Hozircha omborlar mavjud emas</p>
+            {% if user.userrole.role == 'ADMIN' %}
+            <a href="{% url 'inventor:warehouse_create' %}" class="btn btn-primary">
+                Birinchi omborni yarating
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

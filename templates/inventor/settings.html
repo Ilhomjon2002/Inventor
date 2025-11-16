@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Sozlamalar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-cog me-2"></i>
+                    Tizim Sozlamalari
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Asosiy sozlamalar -->
+                        <div class="col-md-6">
+                            <label for="currency" class="form-label">Valyuta *</label>
+                            <select class="form-select" id="currency" name="currency" required>
+                                <option value="UZS" {% if settings.currency == 'UZS' %}selected{% endif %}>So'm (UZS)</option>
+                                <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>Dollar (USD)</option>
+                                <option value="EUR" {% if settings.currency == 'EUR' %}selected{% endif %}>Yevro (EUR)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="monthly_payment_amount" class="form-label">Oylik to'lov summasi *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="monthly_payment_amount" 
+                                       name="monthly_payment_amount" value="{{ settings.monthly_payment_amount }}" 
+                                       step="1000" min="0" required>
+                                <span class="input-group-text">so'm</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Zaxira nusxalash -->
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-database me-2"></i>
+                                        Ma'lumotlar bazasi zaxirasi
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Oxirgi zaxira:</strong></p>
+                                            <p>{{ settings.last_backup|default:"Zaxira olinmagan" }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-grid gap-2">
+                                                <a href="{% url 'inventor:backup_database' %}" class="btn btn-success">
+                                                    <i class="fas fa-save me-2"></i>Zaxira nusxasini olish
+                                                </a>
+                                                <a href="{% url 'inventor:restore_database' %}" class="btn btn-warning">
+                                                    <i class="fas fa-undo me-2"></i>Zaxiradan tiklash
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Import/Export -->
+                        <div class="col-12">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-file-export me-2"></i>
+                                        Ma'lumotlarni boshqarish
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Eksport</h6>
+                                            <div class="d-grid gap-2">
+                                                <a href="{% url 'inventor:export_products' %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-download me-2"></i>Mahsulotlarni eksport qilish
+                                                </a>
+                                                <a href="{% url 'inventor:export_transactions' %}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-download me-2"></i>Tranzaksiyalarni eksport qilish
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Import</h6>
+                                            <div class="d-grid gap-2">
+                                                <a href="{% url 'inventor:import_products' %}" class="btn btn-outline-success">
+                                                    <i class="fas fa-upload me-2"></i>Mahsulotlarni import qilish
+                                                </a>
+                                                <a href="{% url 'inventor:bulk_price_update' %}" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit me-2"></i>Narxlarni ommaviy yangilash
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'users:admin_dashboard' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Sozlamalarni saqlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tizim statistikasi -->
+        <div class="col-lg-4">
+            <div class="table-container">
+                <h3 class="section-title">Tizim statistikasi</h3>
+                <div class="list-group">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami foydalanuvchilar
+                        <span class="badge bg-primary rounded-pill">{{ users_count }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami mahsulotlar
+                        <span class="badge bg-success rounded-pill">{{ products_count }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami tranzaksiyalar
+                        <span class="badge bg-info rounded-pill">{{ transactions_count }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami omborlar
+                        <span class="badge bg-warning rounded-pill">{{ warehouses_count }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Tizim versiyasi
+                        <span class="badge bg-secondary rounded-pill">v1.0.0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tezkor amallar -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">Tezkor amallar</h3>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'inventor:dashboard_statistics' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Umumiy statistika
+                    </a>
+                    <a href="{% url 'inventor:sales_statistics' %}" class="btn btn-outline-success">
+                        <i class="fas fa-chart-line me-2"></i>Sotuv statistikasi
+                    </a>
+                    <a href="{% url 'inventor:inventory_statistics' %}" class="btn btn-outline-info">
+                        <i class="fas fa-boxes me-2"></i>Zaxira statistikasi
+                    </a>
+                    <a href="{% url 'inventor:debt_list' %}" class="btn btn-outline-warning">
+                        <i class="fas fa-credit-card me-2"></i>Qarzdorliklar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

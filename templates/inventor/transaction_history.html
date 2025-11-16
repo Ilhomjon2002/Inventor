@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+{% block title %}Tranzaksiya Tarixi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">Tranzaksiya Tarixi</h2>
+        <div>
+            <a href="{% url 'inventor:transaction_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Yangi tranzaksiya
+            </a>
+            <a href="{% url 'inventor:export_transactions' %}" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Eksport
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtrlar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tranzaksiya turi</label>
+                    <select class="form-select" name="type">
+                        <option value="">Barchasi</option>
+                        <option value="IN" {% if request.GET.type == 'IN' %}selected{% endif %}>Kirim</option>
+                        <option value="OUT_SALE" {% if request.GET.type == 'OUT_SALE' %}selected{% endif %}>Sotuv</option>
+                        <option value="OUT_DAMAGED" {% if request.GET.type == 'OUT_DAMAGED' %}selected{% endif %}>Buzilgan</option>
+                        <option value="OUT_EXPIRED" {% if request.GET.type == 'OUT_EXPIRED' %}selected{% endif %}>Muddati o'tgan</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Ombor</label>
+                    <select class="form-select" name="warehouse">
+                        <option value="">Barchasi</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.id }}" {% if request.GET.warehouse == warehouse.id|stringformat:"i" %}selected{% endif %}>
+                            {{ warehouse.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Boshlanish sanasi</label>
+                    <input type="date" class="form-control" name="start_date" value="{{ request.GET.start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tugash sanasi</label>
+                    <input type="date" class="form-control" name="end_date" value="{{ request.GET.end_date }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i>Filtrlash
+                    </button>
+                    <a href="{% url 'inventor:transaction_history' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>Tozalash
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistik ma'lumotlar -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Jami tranzaksiyalar</h5>
+                    <h2 class="card-text">{{ stats.total_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Kirimlar</h5>
+                    <h2 class="card-text">{{ stats.in_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Sotuvlar</h5>
+                    <h2 class="card-text">{{ stats.out_sale_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Jami daromad</h5>
+                    <h2 class="card-text">{{ stats.total_revenue|floatformat:0 }} so'm</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tranzaksiyalar jadvali -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sana</th>
+                            <th>Mahsulot</th>
+                            <th>Ombor</th>
+                            <th>Turi</th>
+                            <th>Miqdor</th>
+                            <th>Summa</th>
+                            <th>To'lov turi</th>
+                            <th>Foydalanuvchi</th>
+                            <th>Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.date|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <strong>{{ transaction.product.name }}</strong>
+                                <br><small class="text-muted">{{ transaction.product.category.name }}</small>
+                            </td>
+                            <td>{{ transaction.warehouse.name }}</td>
+                            <td>
+                                {% if transaction.transaction_type == 'IN' %}
+                                    <span class="badge bg-success">Kirim</span>
+                                {% elif transaction.transaction_type == 'OUT_SALE' %}
+                                    <span class="badge bg-primary">Sotuv</span>
+                                {% elif transaction.transaction_type == 'OUT_DAMAGED' %}
+                                    <span class="badge bg-danger">Buzilgan</span>
+                                {% elif transaction.transaction_type == 'OUT_EXPIRED' %}
+                                    <span class="badge bg-warning">Muddati o'tgan</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.quantity }} {{ transaction.product.get_unit_display }}</td>
+                            <td>
+                                {% if transaction.product.price %}
+                                    {{ transaction.quantity|floatformat:0 }} × {{ transaction.product.price|floatformat:0 }} = 
+                                    <strong>{{ transaction.quantity|multiply:transaction.product.price|floatformat:0 }} so'm</strong>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if transaction.transaction_type == 'OUT_SALE' %}
+                                    {% if transaction.payment_type == 'CASH' %}
+                                        <span class="badge bg-success">Naqd</span>
+                                    {% elif transaction.payment_type == 'DEBT' %}
+                                        <span class="badge bg-warning">Qarz</span>
+                                    {% elif transaction.payment_type == 'CARD' %}
+                                        <span class="badge bg-info">Karta</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.user.username }}</td>
+                            <td>{{ transaction.description|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="fas fa-exchange-alt fa-3x mb-3"></i>
+                                <p>Hozircha tranzaksiyalar mavjud emas</p>
+                                <a href="{% url 'inventor:transaction_create' %}" class="btn btn-primary">
+                                    Birinchi tranzaksiyani yarating
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            &laquo;
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            &raquo;
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

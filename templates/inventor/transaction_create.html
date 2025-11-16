@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Yangi Tranzaksiya{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Yangi Tranzaksiya
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Asosiy ma'lumotlar -->
+                        <div class="col-md-6">
+                            <label for="product" class="form-label">Mahsulot *</label>
+                            <select class="form-select" id="product" name="product" required>
+                                <option value="">Mahsulotni tanlang</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" data-price="{{ product.price }}" data-stock="{{ product.stock_quantity }}">
+                                    {{ product.name }} ({{ product.stock_quantity }} dona) - {{ product.price }} so'm
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="warehouse" class="form-label">Ombor *</label>
+                            <select class="form-select" id="warehouse" name="warehouse" required>
+                                <option value="">Omborni tanlang</option>
+                                {% for warehouse in warehouses %}
+                                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="transaction_type" class="form-label">Tranzaksiya turi *</label>
+                            <select class="form-select" id="transaction_type" name="transaction_type" required>
+                                <option value="IN">Kirim (Mahsulot qo'shish)</option>
+                                <option value="OUT_SALE">Chiqim (Sotuv)</option>
+                                <option value="OUT_DAMAGED">Chiqim (Buzilgan)</option>
+                                <option value="OUT_EXPIRED">Chiqim (Muddati o'tgan)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">Miqdor *</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   min="1" required placeholder="0">
+                        </div>
+                        
+                        <!-- To'lov ma'lumotlari -->
+                        <div class="col-md-6">
+                            <label for="payment_type" class="form-label">To'lov turi</label>
+                            <select class="form-select" id="payment_type" name="payment_type">
+                                <option value="CASH">Naqd</option>
+                                <option value="DEBT">Qarz</option>
+                                <option value="CARD">Karta</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="customer_name" class="form-label">Mijoz ismi</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" 
+                                   placeholder="Mijoz ismini kiriting">
+                        </div>
+                        
+                        <!-- Hisob-kitob -->
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Hisob-kitob</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <p class="mb-1">Narx:</p>
+                                            <h5 id="price_display">0 so'm</h5>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <p class="mb-1">Jami summa:</p>
+                                            <h5 id="total_display">0 so'm</h5>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <p class="mb-1">Zaxiradan keyin:</p>
+                                            <h5 id="stock_after_display">0 dona</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Izoh -->
+                        <div class="col-12">
+                            <label for="description" class="form-label">Izoh</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Qo'shimcha izoh..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'inventor:transaction_history' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check me-2"></i>Tasdiqlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('product');
+    const quantityInput = document.getElementById('quantity');
+    const transactionTypeSelect = document.getElementById('transaction_type');
+    const priceDisplay = document.getElementById('price_display');
+    const totalDisplay = document.getElementById('total_display');
+    const stockAfterDisplay = document.getElementById('stock_after_display');
+
+    function updateCalculations() {
+        const selectedProduct = productSelect.options[productSelect.selectedIndex];
+        const price = selectedProduct ? parseFloat(selectedProduct.getAttribute('data-price')) || 0 : 0;
+        const currentStock = selectedProduct ? parseInt(selectedProduct.getAttribute('data-stock')) || 0 : 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const transactionType = transactionTypeSelect.value;
+
+        // Narx va jami summa
+        priceDisplay.textContent = price.toLocaleString() + ' so\'m';
+        const total = price * quantity;
+        totalDisplay.textContent = total.toLocaleString() + ' so\'m';
+
+        // Zaxiradan keyingi holat
+        let stockAfter = currentStock;
+        if (transactionType === 'IN') {
+            stockAfter += quantity;
+        } else {
+            stockAfter -= quantity;
+        }
+        stockAfterDisplay.textContent = stockAfter.toLocaleString() + ' dona';
+
+        // Agar zaxira yetarli bo'lmasa, ogohlantirish
+        if (transactionType.startsWith('OUT_') && quantity > currentStock) {
+            stockAfterDisplay.className = 'text-danger';
+        } else {
+            stockAfterDisplay.className = '';
+        }
+    }
+
+    productSelect.addEventListener('change', updateCalculations);
+    quantityInput.addEventListener('input', updateCalculations);
+    transactionTypeSelect.addEventListener('change', updateCalculations);
+
+    // Dastlabki hisob-kitob
+    updateCalculations();
+});
+</script>
+{% endblock %}

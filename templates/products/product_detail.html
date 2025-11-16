@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - Tafsilotlar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Mahsulot ma'lumotlari -->
+        <div class="col-lg-8">
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h2 class="section-title mb-2">{{ product.name }}</h2>
+                        <p class="text-muted mb-0">{{ product.category.name }}</p>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{% url 'products:product_edit' product.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit me-2"></i>Tahrirlash
+                        </a>
+                        <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Orqaga
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Rasm -->
+                    <div class="col-md-4 mb-4">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                             class="img-fluid rounded shadow-sm" style="max-height: 300px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                             style="height: 300px;">
+                            <i class="fas fa-box fa-4x text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Asosiy ma'lumotlar -->
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Shtrix-kod:</label>
+                                <p>{{ product.barcode|default:"Mavjud emas" }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Narxi:</label>
+                                <p class="h5 text-primary">{{ product.price }} so'm</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Zaxiradagi miqdor:</label>
+                                <p class="h5 {% if product.is_low_stock %}text-warning{% else %}text-success{% endif %}">
+                                    {{ product.stock_quantity }} {{ product.get_unit_display }}
+                                </p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Minimal zaxira:</label>
+                                <p>{{ product.min_stock }} {{ product.get_unit_display }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Ombor:</label>
+                                <p>{{ product.warehouse.name }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Yetkazib beruvchi:</label>
+                                <p>{{ product.supplier.name|default:"Mavjud emas" }}</p>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Tavsif:</label>
+                                <p>{{ product.description|default:"Tavsif mavjud emas" }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Yaratilgan sana:</label>
+                                <p>{{ product.created_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold">Yangilangan sana:</label>
+                                <p>{{ product.updated_at|date:"d.m.Y H:i" }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Zaxira holati -->
+                        <div class="mt-4">
+                            {% if product.stock_quantity <= 0 %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Diqqat!</strong> Bu mahsulot zaxirada tugagan.
+                            </div>
+                            {% elif product.is_low_stock %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Ogohlantirish!</strong> Bu mahsulotning zaxiradi kamayib ketdi.
+                            </div>
+                            {% else %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Yaxshi!</strong> Zaxira holati normal.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- So'nggi tranzaksiyalar -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">So'nggi tranzaksiyalar</h3>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Sana</th>
+                                <th>Turi</th>
+                                <th>Miqdor</th>
+                                <th>Foydalanuvchi</th>
+                                <th>Izoh</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    {% if transaction.transaction_type == 'IN' %}
+                                    <span class="badge bg-success">Kirim</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">Chiqim</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.quantity }} {{ product.get_unit_display }}</td>
+                                <td>{{ transaction.user.username }}</td>
+                                <td>{{ transaction.description|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3">
+                                    Hozircha tranzaksiyalar mavjud emas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Qo'shimcha ma'lumotlar -->
+        <div class="col-lg-4">
+            <!-- Tezkor amallar -->
+            <div class="table-container">
+                <h3 class="section-title">Tezkor amallar</h3>
+                <div class="d-grid gap-2">
+                    {% if user.userrole.role == 'WAREHOUSE_MANAGER' or user.userrole.role == 'ADMIN' %}
+                    <a href="{% url 'inventor:transaction_create' %}?product={{ product.id }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-exchange-alt me-2"></i>Tranzaksiya yaratish
+                    </a>
+                    {% endif %}
+                    {% if user.userrole.role == 'SELLER' and product.stock_quantity > 0 %}
+                    <a href="{% url 'users:take_product' product.id %}" class="btn btn-success">
+                        <i class="fas fa-cart-plus me-2"></i>Mahsulot olish
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'products:product_edit' product.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit me-2"></i>Mahsulotni tahrirlash
+                    </a>
+                    <a href="{% url 'products:product_delete' product.pk %}" class="btn btn-outline-danger"
+                       onclick="return confirm('Rostan ham oʻchirmoqchimisiz?')">
+                        <i class="fas fa-trash me-2"></i>Mahsulotni o'chirish
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistika -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">Statistika</h3>
+                <div class="list-group">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami sotilgan
+                        <span class="badge bg-primary rounded-pill">
+                            {% with total_sold=0 %}
+                                {% for transaction in transactions %}
+                                    {% if transaction.transaction_type != 'IN' %}
+                                        {% widthratio total_sold 1 transaction.quantity as total_sold %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ total_sold }}
+                            {% endwith %}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Jami kiritilgan
+                        <span class="badge bg-success rounded-pill">
+                            {% with total_in=0 %}
+                                {% for transaction in transactions %}
+                                    {% if transaction.transaction_type == 'IN' %}
+                                        {% widthratio total_in 1 transaction.quantity as total_in %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ total_in }}
+                            {% endwith %}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        O'rtacha narx
+                        <span class="badge bg-info rounded-pill">{{ product.price }} so'm</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        Zaxira holati
+                        <span class="badge {% if product.is_low_stock %}bg-warning{% else %}bg-success{% endif %} rounded-pill">
+                            {{ product.stock_quantity }}/{{ product.min_stock }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

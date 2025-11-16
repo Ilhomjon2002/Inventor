@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Qarz To'lash{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Qarz To'lash
+                </h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Qarz ma'lumotlari</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Sotuvchi:</label>
+                                <p>{{ debt.seller.username }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Mahsulot:</label>
+                                <p>{{ debt.product.name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Jami summa:</label>
+                                <p class="h5 text-primary">{{ debt.total_amount }} so'm</p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">To'langan:</label>
+                                <p class="h5 text-success">{{ debt.paid_amount }} so'm</p>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Qolgan qarz:</label>
+                                <p class="h4 {% if debt.remaining_debt > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ debt.remaining_debt }} so'm
+                                </p>
+                            </div>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div class="mb-4">
+                                <label for="payment_amount" class="form-label fw-bold">To'lov summasi *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="payment_amount" 
+                                           name="payment_amount" step="0.01" min="0.01" 
+                                           max="{{ debt.remaining_debt }}" required 
+                                           placeholder="To'lov summasini kiriting">
+                                    <span class="input-group-text">so'm</span>
+                                </div>
+                                <div class="form-text">
+                                    Maksimal to'lov summasi: {{ debt.remaining_debt }} so'm
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">To'lov turi</label>
+                                <select class="form-select" name="payment_method">
+                                    <option value="CASH">Naqd pul</option>
+                                    <option value="CARD">Bank kartasi</option>
+                                    <option value="TRANSFER">Bank o'tkazmasi</option>
+                                    <option value="OTHER">Boshqa</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="description" class="form-label">Izoh</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="3" placeholder="To'lov haqida qo'shimcha izoh..."></textarea>
+                            </div>
+
+                            <!-- To'lov natijasi -->
+                            <div class="card bg-light mb-4">
+                                <div class="card-body">
+                                    <h6 class="card-title">To'lov natijasi</h6>
+                                    <div id="payment_result">
+                                        <p class="text-muted">To'lov summasini kiriting</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check me-2"></i>To'lovni tasdiqlash
+                                </button>
+                                <a href="{% url 'inventor:debt_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- To'lov tarixi -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">To'lov tarixi</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if debt.paid_amount > 0 %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Jami to'langan: {{ debt.paid_amount }} so'm
+                        </div>
+                        <!-- Bu yerda to'lovlar tarixi ko'rsatiladi -->
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-history fa-2x mb-3"></i>
+                            <p>Hozircha to'lovlar mavjud emas</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentAmountInput = document.getElementById('payment_amount');
+    const paymentResult = document.getElementById('payment_result');
+    const remainingDebt = {{ debt.remaining_debt }};
+
+    function updatePaymentResult() {
+        const paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+        
+        if (paymentAmount <= 0) {
+            paymentResult.innerHTML = '<p class="text-muted">To\'lov summasini kiriting</p>';
+            return;
+        }
+
+        if (paymentAmount > remainingDebt) {
+            paymentResult.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    To'lov summasi qolgan qarzdan katta!
+                </div>
+            `;
+            return;
+        }
+
+        const newRemaining = remainingDebt - paymentAmount;
+        const newPaidAmount = {{ debt.paid_amount }} + paymentAmount;
+
+        let statusHtml = '';
+        if (newRemaining === 0) {
+            statusHtml = '<span class="badge bg-success">To\'liq to\'langan</span>';
+        } else if (paymentAmount > 0) {
+            statusHtml = '<span class="badge bg-warning">Qisman to\'langan</span>';
+        }
+
+        paymentResult.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1">Yangi to'langan:</p>
+                    <h5 class="text-success">${paymentAmount.toLocaleString()} so'm</h5>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1">Yangi qolgan:</p>
+                    <h5 class="${newRemaining > 0 ? 'text-danger' : 'text-success'}">${newRemaining.toLocaleString()} so'm</h5>
+                </div>
+            </div>
+            <div class="mt-2">
+                ${statusHtml}
+            </div>
+        `;
+    }
+
+    paymentAmountInput.addEventListener('input', updatePaymentResult);
+    
+    // Dastlabki hisob-kitob
+    updatePaymentResult();
+});
+</script>
+{% endblock %}

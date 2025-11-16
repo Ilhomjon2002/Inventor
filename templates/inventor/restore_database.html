@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Ma'lumotlar Bazasini Tiklash{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-undo me-2"></i>
+                    Ma'lumotlar Bazasini Tiklash
+                </h2>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Diqqat!</strong> Bu amal joriy ma'lumotlarni zaxira fayli bilan almashtiradi. 
+                    Barcha yangi ma'lumotlar yo'qoladi.
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Mavjud zaxira fayllari</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if settings.backup_file %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Oxirgi zaxira:</strong> {{ settings.last_backup|date:"d.m.Y H:i" }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Zaxira fayli manzili:</label>
+                            <p class="text-muted">{{ settings.backup_file }}</p>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="alert alert-danger">
+                                <h5><i class="fas fa-skull-crossbones me-2"></i>Ogohlantirish!</h5>
+                                <p class="mb-2">Quyidagi amallarni bajarishdan oldin, quyidagilarni tekshiring:</p>
+                                <ul class="mb-3">
+                                    <li>Barcha muhim ma'lumotlar zaxirasi olinganmi?</li>
+                                    <li>Barcha foydalanuvchilar bu haqda ogohlantirilganmi?</li>
+                                    <li>Tizimda hech kim ishlamayotganiga ishonch hosil qiling</li>
+                                </ul>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="confirm_restore" required>
+                                    <label class="form-check-label fw-bold" for="confirm_restore">
+                                        Men tushunaman va ma'lumotlarni tiklashni tasdiqlayman
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-danger" id="restore_btn" disabled>
+                                    <i class="fas fa-undo me-2"></i>Ma'lumotlarni tiklash
+                                </button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle me-2"></i>
+                            <strong>Zaxira fayli topilmadi!</strong> Iltimos, avval ma'lumotlar bazasining zaxira nusxasini oling.
+                        </div>
+                        <a href="{% url 'inventor:backup_database' %}" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Zaxira nusxasini olish
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Qo'shimcha ma'lumotlar -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Tiklash jarayoni haqida</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Qanday ishlaydi:</h6>
+                        <ol>
+                            <li>Joriy ma'lumotlar bazasi zaxira fayli bilan almashtiriladi</li>
+                            <li>Tizim avtomatik ravishda qayta ishga tushadi</li>
+                            <li>Barcha foydalanuvchilar tizimdan chiqariladi</li>
+                            <li>Zaxira sanasidagi holatga qaytiladi</li>
+                        </ol>
+                        
+                        <h6>Eslatmalar:</h6>
+                        <ul>
+                            <li>Tiklash jarayoni bir necha daqiqa davom etishi mumkin</li>
+                            <li>Katta ma'lumotlar bazalari uchun vaqt ko'proq kerak bo'ladi</li>
+                            <li>Jarayon davomida tizimdan foydalanish mumkin emas</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <a href="{% url 'inventor:settings_update' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Sozlamalarga qaytish
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheckbox = document.getElementById('confirm_restore');
+    const restoreBtn = document.getElementById('restore_btn');
+
+    confirmCheckbox.addEventListener('change', function() {
+        restoreBtn.disabled = !this.checked;
+    });
+
+    // Qo'shimcha tasdiq
+    restoreBtn.addEventListener('click', function(e) {
+        if (!confirm('ROSTAN HAM MA\'LUMOTLARNI TIKLAMOQCHIMISIZ?\n\nBu amalni bekor qilib bo\'lmaydi!')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

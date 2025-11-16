@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ supplier.name }} - Mahsulotlar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">
+            <i class="fas fa-boxes me-2"></i>
+            {{ supplier.name }} - Mahsulotlar
+        </h2>
+        <div>
+            <a href="{% url 'inventor:supplier_detail' supplier.pk %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Orqaga
+            </a>
+            <a href="{% url 'products:product_create' %}?supplier={{ supplier.id }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Yangi mahsulot
+            </a>
+        </div>
+    </div>
+
+    <!-- Mahsulotlar jadvali -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nomi</th>
+                        <th>Kategoriya</th>
+                        <th>Narxi</th>
+                        <th>Zaxirada</th>
+                        <th>Minimal</th>
+                        <th>Holati</th>
+                        <th>Ombor</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                     class="rounded me-3" width="40" height="40" style="object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-box text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ product.name }}</strong>
+                                    {% if product.barcode %}
+                                    <br><small class="text-muted">{{ product.barcode }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ product.category.name }}</td>
+                        <td>{{ product.price }} so'm</td>
+                        <td>{{ product.stock_quantity }} {{ product.get_unit_display }}</td>
+                        <td>{{ product.min_stock }} {{ product.get_unit_display }}</td>
+                        <td>
+                            {% if product.stock_quantity <= 0 %}
+                                <span class="badge bg-danger">Tugagan</span>
+                            {% elif product.is_low_stock %}
+                                <span class="badge bg-warning">Kamayib ketdi</span>
+                            {% else %}
+                                <span class="badge bg-success">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.warehouse.name }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'products:product_detail' product.pk %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'products:product_edit' product.pk %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-3x mb-3"></i>
+                            <p>Hozircha mahsulotlar mavjud emas</p>
+                            <a href="{% url 'products:product_create' %}?supplier={{ supplier.id }}" class="btn btn-primary">
+                                Birinchi mahsulotni qo'shing
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Statistik ma'lumotlar -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Jami mahsulotlar</h5>
+                    <h2 class="card-text">{{ products.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Normal zaxira</h5>
+                    <h2 class="card-text">
+                        {% with normal_count=0 %}
+                            {% for product in products %}
+                                {% if not product.is_low_stock and product.stock_quantity > 0 %}
+                                    {% add normal_count 1 as normal_count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ normal_count }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Kam zaxiradagilar</h5>
+                    <h2 class="card-text">
+                        {% with low_stock_count=0 %}
+                            {% for product in products %}
+                                {% if product.is_low_stock %}
+                                    {% add low_stock_count 1 as low_stock_count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ low_stock_count }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Tugaganlar</h5>
+                    <h2 class="card-text">
+                        {% with out_of_stock_count=0 %}
+                            {% for product in products %}
+                                {% if product.stock_quantity == 0 %}
+                                    {% add out_of_stock_count 1 as out_of_stock_count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ out_of_stock_count }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

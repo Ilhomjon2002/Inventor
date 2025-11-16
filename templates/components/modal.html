@@ -1,0 +1,95 @@
+<!-- Mahsulot uchun Modal -->
+<div id="modal-{{ product.id }}" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+        <button class="absolute top-4 right-4 text-gray-500 text-2xl close-modal" data-modal-id="modal-{{ product.id }}">&times;</button>
+        <h2 class="text-2xl font-semibold mb-4 text-center">Mahsulotni tahrirlash</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <div class="space-y-4">
+                <!-- Mahsulot nomi -->
+                <div>
+                    <label class="block text-gray-700 font-medium">Mahsulot nomi</label>
+                    <input value="{{ product.name }}" type="text" name="name" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring focus:ring-blue-300" required>
+                </div>
+                
+                <!-- Tavsifi -->
+                <div>
+                    <label class="block text-gray-700 font-medium">Tavsifi</label>
+                    <textarea name="description" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring focus:ring-blue-300">{{ product.description }}</textarea>
+                </div>
+
+                <!-- Narx va Omborda -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium">Narx ($)</label>
+                        <input value="{{ product.price }}" type="number" name="price" step="0.01" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring focus:ring-blue-300" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-medium">Omborda</label>
+                        <input value="{{ product.stock }}" type="number" name="stock" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring focus:ring-blue-300" required>
+                    </div>
+                </div>
+
+                <!-- Kategoriya -->
+                <div>
+                    <label class="block text-gray-700 font-medium">Kategoriya</label>
+                    <select name="category" class="w-full border border-gray-300 rounded-md px-4 py-2 focus:ring focus:ring-blue-300">
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if product.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Rasm Yuklash -->
+                <div>
+                    <label class="block text-gray-700 font-medium">Rasm Yuklash</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- 1-Rasm -->
+                        <div class="text-center">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="Rasm 1" class="w-24 h-24 object-cover mx-auto rounded-md mb-2">
+                                <input type="hidden" name="old_image" value="{{ product.image.url }}">
+                            {% endif %}
+                            <input type="file" name="image" class="block w-full text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring focus:ring-blue-300">
+                        </div>
+                
+                        <!-- 2-Rasm -->
+                        <div class="text-center">
+                            {% if product.image2 %}
+                                <img src="{{ product.image2.url }}" alt="Rasm 2" class="w-24 h-24 object-cover mx-auto rounded-md mb-2">
+                                <input type="hidden" name="old_image2" value="{{ product.image2.url }}">
+                            {% endif %}
+                            <input type="file" name="image2" class="block w-full text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring focus:ring-blue-300">
+                        </div>
+                
+                        <!-- 3-Rasm -->
+                        <div class="text-center">
+                            {% if product.image3 %}
+                                <img src="{{ product.image3.url }}" alt="Rasm 3" class="w-24 h-24 object-cover mx-auto rounded-md mb-2">
+                                <input type="hidden" name="old_image3" value="{{ product.image3.url }}">
+                            {% endif %}
+                            <input type="file" name="image3" class="block w-full text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring focus:ring-blue-300">
+                        </div>
+                
+                        <!-- 4-Rasm -->
+                        <div class="text-center">
+                            {% if product.image4 %}
+                                <img src="{{ product.image4.url }}" alt="Rasm 4" class="w-24 h-24 object-cover mx-auto rounded-md mb-2">
+                                <input type="hidden" name="old_image4" value="{{ product.image4.url }}">
+                            {% endif %}
+                            <input type="file" name="image4" class="block w-full text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring focus:ring-blue-300">
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- Tugmalar -->
+            <div class="mt-6 flex justify-between">
+                <button type="button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 close-modal" data-modal-id="modal-{{ product.id }}">Yopish</button>
+                <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Mahsulotlarni Import Qilish{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-upload me-2"></i>
+                    Mahsulotlarni Import Qilish
+                </h2>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Excel fayldan mahsulotlarni import qilish.
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Import qilish</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="mb-4">
+                                <label for="file" class="form-label fw-bold">Excel fayl *</label>
+                                <input type="file" class="form-control" id="file" name="file" 
+                                       accept=".xlsx, .xls" required>
+                                <div class="form-text">
+                                    Qo'llab-quvvatlanadigan formatlar: .xlsx, .xls
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Import parametrlari</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="update_existing" id="update_existing" checked>
+                                    <label class="form-check-label" for="update_existing">
+                                        Mavjud mahsulotlarni yangilash
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="create_new" id="create_new" checked>
+                                    <label class="form-check-label" for="create_new">
+                                        Yangi mahsulotlarni yaratish
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>Import qilish
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Fayl formati -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Fayl formati</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Excel fayl quyidagi ustunlarga ega bo'lishi kerak:</p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Ustun nomi</th>
+                                        <th>Majburiy</th>
+                                        <th>Izoh</th>
+                                        <th>Namuna</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>Nomi</code></td>
+                                        <td>✅</td>
+                                        <td>Mahsulot nomi</td>
+                                        <td>Non</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Kategoriya</code></td>
+                                        <td>✅</td>
+                                        <td>Kategoriya nomi</td>
+                                        <td>Oziq-ovqat</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Shtrix-kod</code></td>
+                                        <td>❌</td>
+                                        <td>Benzersiz shtrix-kod</td>
+                                        <td>1234567890123</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Tavsif</code></td>
+                                        <td>❌</td>
+                                        <td>Mahsulot tavsifi</td>
+                                        <td>Oq non</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Narxi</code></td>
+                                        <td>✅</td>
+                                        <td>Mahsulot narxi</td>
+                                        <td>5000</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Minimal zaxira</code></td>
+                                        <td>❌</td>
+                                        <td>Minimal zaxira miqdori</td>
+                                        <td>10</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Zaxiradagi miqdor</code></td>
+                                        <td>❌</td>
+                                        <td>Joriy zaxira miqdori</td>
+                                        <td>50</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Yetkazib beruvchi</code></td>
+                                        <td>❌</td>
+                                        <td>Yetkazib beruvchi nomi</td>
+                                        <td>Non zavodi</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3">
+                            <a href="{% url 'inventor:export_products' %}" class="btn btn-outline-success me-2">
+                                <i class="fas fa-download me-2"></i>Namuna fayl yuklab olish
+                            </a>
+                            <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-boxes me-2"></i>Mahsulotlar ro'yxati
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import tarixi -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">So'nggi importlar</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Sana</th>
+                                        <th>Fayl nomi</th>
+                                        <th>Yangi</th>
+                                        <th>Yangilangan</th>
+                                        <th>Holati</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Bu yerda import tarixi ko'rsatiladi -->
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            Import tarixi mavjud emas
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file');
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const fileName = file.name;
+            const fileExtension = fileName.split('.').pop().toLowerCase();
+            
+            if (!['xlsx', 'xls'].includes(fileExtension)) {
+                alert('Iltimos, faqat Excel fayllarni (.xlsx, .xls) yuklang!');
+                e.target.value = '';
+            }
+            
+            // Fayl hajmini tekshirish (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Fayl hajmi 10MB dan katta boʻlmasligi kerak!');
+                e.target.value = '';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

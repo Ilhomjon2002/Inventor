@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Mahsulotlar Ro'yxati{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">Mahsulotlar</h2>
+        <div>
+            <a href="{% url 'products:product_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Yangi mahsulot
+            </a>
+            <a href="{% url 'products:export_products' %}" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Eksport
+            </a>
+        </div>
+    </div>
+
+    <!-- Qidiruv va filtrlash -->
+    <div class="table-container mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" placeholder="Mahsulot nomi bo'yicha qidirish..." 
+                           value="{{ request.GET.q }}">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="category">
+                    <option value="">Barcha kategoriyalar</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"i" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="warehouse">
+                    <option value="">Barcha omborlar</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}" {% if request.GET.warehouse == warehouse.id|stringformat:"i" %}selected{% endif %}>
+                        {{ warehouse.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Mahsulotlar jadvali -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nomi</th>
+                        <th>Kategoriya</th>
+                        <th>Narxi</th>
+                        <th>Zaxirada</th>
+                        <th>Minimal</th>
+                        <th>Holati</th>
+                        <th>Ombor</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                     class="rounded me-3" width="40" height="40" style="object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-box text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ product.name }}</strong>
+                                    {% if product.barcode %}
+                                    <br><small class="text-muted">{{ product.barcode }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ product.category.name }}</td>
+                        <td>{{ product.price }} so'm</td>
+                        <td>{{ product.stock_quantity }} {{ product.get_unit_display }}</td>
+                        <td>{{ product.min_stock }} {{ product.get_unit_display }}</td>
+                        <td>
+                            {% if product.stock_quantity <= 0 %}
+                                <span class="badge bg-danger">Tugagan</span>
+                            {% elif product.is_low_stock %}
+                                <span class="badge bg-warning">Kamayib ketdi</span>
+                            {% else %}
+                                <span class="badge bg-success">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.warehouse.name }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'products:product_detail' product.pk %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'products:product_edit' product.pk %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'products:product_delete' product.pk %}" class="btn btn-outline-danger" 
+                                   onclick="return confirm('Rostan ham oʻchirmoqchimisiz?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-3x mb-3"></i>
+                            <p>Hozircha mahsulotlar mavjud emas</p>
+                            <a href="{% url 'products:product_create' %}" class="btn btn-primary">
+                                Birinchi mahsulotni qo'shing
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        &laquo;
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+
+    <!-- Kam zaxiradagi mahsulotlar -->
+    {% if low_stock %}
+    <div class="table-container mt-4">
+        <h3 class="section-title text-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Kam zaxiradagi mahsulotlar
+        </h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-warning">
+                <thead>
+                    <tr>
+                        <th>Nomi</th>
+                        <th>Zaxirada</th>
+                        <th>Minimal</th>
+                        <th>Farq</th>
+                        <th>Ombor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in low_stock %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.stock_quantity }}</td>
+                        <td>{{ product.min_stock }}</td>
+                        <td class="text-danger">{{ product.min_stock|add:"-"|add:product.stock_quantity }}</td>
+                        <td>{{ product.warehouse.name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

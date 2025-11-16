@@ -1,0 +1,106 @@
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="p-3">
+        <h4 class="text-white mb-0">
+            <i class="fas fa-warehouse"></i>
+            <span class="sidebar-brand-text">Inventor</span>
+        </h4>
+    </div>
+    
+    <nav class="nav flex-column p-3">
+        {% if user.is_authenticated %}
+            {% if user.userrole.role == 'ADMIN' %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'users:admin_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Boshqaruv paneli</span>
+                </a>
+                <a class="nav-link" href="{% url 'users:create_warehouse_manager' %}">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Ombor qo'shish</span>
+                </a>
+                <a class="nav-link" href="{% url 'users:payment_management' %}">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>To'lovlar</span>
+                </a>
+            {% elif user.userrole.role == 'WAREHOUSE_MANAGER' %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'warehouse_manager_dashboard' %}active{% endif %}" href="{% url 'users:warehouse_manager_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="nav-link" href="{% url 'users:create_seller' %}">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Sotuvchi qo'shish</span>
+                </a>
+            {% elif user.userrole.role == 'SELLER' %}
+                <a class="nav-link {% if request.resolver_match.url_name == 'seller_dashboard' %}active{% endif %}" href="{% url 'users:seller_dashboard' %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            {% endif %}
+            
+            <!-- Umumiy menyu -->
+            <a class="nav-link" href="{% url 'products:product_list' %}">
+                <i class="fas fa-boxes"></i>
+                <span>Mahsulotlar</span>
+            </a>
+            <a class="nav-link" href="{% url 'inventor:warehouse_list' %}">
+                <i class="fas fa-warehouse"></i>
+                <span>Omborlar</span>
+            </a>
+            <a class="nav-link" href="{% url 'inventor:transaction_history' %}">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Tranzaksiyalar</span>
+            </a>
+            <a class="nav-link" href="{% url 'inventor:report_list' %}">
+                <i class="fas fa-chart-bar"></i>
+                <span>Hisobotlar</span>
+            </a>
+            
+            {% if user.userrole.role == 'ADMIN' or user.userrole.role == 'WAREHOUSE_MANAGER' %}
+                <a class="nav-link" href="{% url 'inventor:supplier_list' %}">
+                    <i class="fas fa-truck"></i>
+                    <span>Yetkazib beruvchilar</span>
+                </a>
+            {% endif %}
+            
+            {% if user.userrole.role == 'ADMIN' %}
+                <a class="nav-link" href="{% url 'inventor:settings_update' %}">
+                    <i class="fas fa-cog"></i>
+                    <span>Sozlamalar</span>
+                </a>
+            {% endif %}
+        {% endif %}
+    </nav>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <div class="user-avatar me-3">
+                                {{ user.username|first|upper }}
+                            </div>
+                            {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'users:profile' %}">Profil</a></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">Chiqish</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">Kirish</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

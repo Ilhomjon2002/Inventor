@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Narxlarni Ommaviy Yangilash{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Narxlarni Ommaviy Yangilash
+                </h2>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Diqqat!</strong> Bu amal barcha mahsulotlar narxlariga ta'sir qiladi.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Yangilash turi -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Yangilash turi *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="update_type" 
+                                       id="percentage" value="percentage" checked>
+                                <label class="form-check-label" for="percentage">
+                                    Foiz bo'yicha o'zgartirish
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="update_type" 
+                                       id="fixed" value="fixed">
+                                <label class="form-check-label" for="fixed">
+                                    Belgilangan summa qo'shish
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Foiz bo'yicha -->
+                        <div class="col-12 percentage-field">
+                            <label for="percentage" class="form-label">Foiz miqdori *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="percentage" name="percentage" 
+                                       step="0.1" value="10" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">
+                                Ijobiy foiz - narxni oshiradi, salbiy foiz - narxni kamaytiradi
+                            </div>
+                        </div>
+                        
+                        <!-- Belgilangan summa -->
+                        <div class="col-12 fixed-field" style="display: none;">
+                            <label for="fixed_amount" class="form-label">Summa *</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="fixed_amount" name="fixed_amount" 
+                                       step="0.01" value="0">
+                                <span class="input-group-text">so'm</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Qo'shimcha filtrlash -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Qo'shimcha filtrlash (ixtiyoriy)</label>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <select class="form-select" name="category">
+                                        <option value="">Barcha kategoriyalar</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select" name="warehouse">
+                                        <option value="">Barcha omborlar</option>
+                                        {% for warehouse in warehouses %}
+                                        <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Oldindan ko'rish -->
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">O'zgarishlar oldindan ko'rinishi</h6>
+                                    <div id="preview">
+                                        <p class="text-muted">Parametrlarni tanlang</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'inventor:settings_update' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <button type="submit" class="btn btn-primary"
+                                        onclick="return confirm('Barcha mahsulotlar narxlarini yangilamoqchimisiz?')">
+                                    <i class="fas fa-sync me-2"></i>Narxlarni yangilash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const percentageRadio = document.getElementById('percentage');
+    const fixedRadio = document.getElementById('fixed');
+    const percentageField = document.querySelector('.percentage-field');
+    const fixedField = document.querySelector('.fixed-field');
+    const preview = document.getElementById('preview');
+
+    function updatePreview() {
+        const updateType = percentageRadio.checked ? 'percentage' : 'fixed';
+        
+        if (updateType === 'percentage') {
+            const percentage = document.getElementById('percentage').value;
+            let changeType = 'oshadi';
+            let changeClass = 'text-success';
+            
+            if (percentage < 0) {
+                changeType = 'kamayadi';
+                changeClass = 'text-danger';
+            } else if (percentage == 0) {
+                changeType = "o'zgarmaydi";
+                changeClass = 'text-muted';
+            }
+            
+            preview.innerHTML = `
+                <p><strong>Barcha mahsulotlar narxi ${Math.abs(percentage)}% ${changeType}</strong></p>
+                <p class="${changeClass}">
+                    Masalan: 10,000 so'm → ${(10000 * (1 + percentage/100)).toLocaleString()} so'm
+                </p>
+            `;
+        } else {
+            const fixedAmount = document.getElementById('fixed_amount').value;
+            let changeType = 'qo\'shiladi';
+            let changeClass = 'text-success';
+            
+            if (fixedAmount < 0) {
+                changeType = 'ayiriladi';
+                changeClass = 'text-danger';
+            } else if (fixedAmount == 0) {
+                changeType = "o'zgarmaydi";
+                changeClass = 'text-muted';
+            }
+            
+            preview.innerHTML = `
+                <p><strong>Barcha mahsulotlar narxiga ${Math.abs(fixedAmount)} so'm ${changeType}</strong></p>
+                <p class="${changeClass}">
+                    Masalan: 10,000 so'm → ${(10000 + parseFloat(fixedAmount)).toLocaleString()} so'm
+                </p>
+            `;
+        }
+    }
+
+    function toggleFields() {
+        if (percentageRadio.checked) {
+            percentageField.style.display = 'block';
+            fixedField.style.display = 'none';
+        } else {
+            percentageField.style.display = 'none';
+            fixedField.style.display = 'block';
+        }
+        updatePreview();
+    }
+
+    percentageRadio.addEventListener('change', toggleFields);
+    fixedRadio.addEventListener('change', toggleFields);
+    
+    document.getElementById('percentage').addEventListener('input', updatePreview);
+    document.getElementById('fixed_amount').addEventListener('input', updatePreview);
+
+    // Dastlabki holat
+    toggleFields();
+});
+</script>
+{% endblock %}

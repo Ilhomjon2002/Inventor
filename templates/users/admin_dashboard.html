@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Boshqaruv Paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Statistik kartochkalar -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-users"></i>
+                <div class="card-title">Jami foydalanuvchilar</div>
+                <div class="card-value">{{ total_warehouses }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-warehouse"></i>
+                <div class="card-title">Omborlar soni</div>
+                <div class="card-value">{{ total_warehouses }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-user-tie"></i>
+                <div class="card-title">Sotuvchilar soni</div>
+                <div class="card-value">{{ total_sellers }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-chart-line"></i>
+                <div class="card-title">Jami daromad</div>
+                <div class="card-value">{{ total_revenue }} so'm</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- So'nggi to'lovlar -->
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h3 class="section-title">So'nggi to'lovlar</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Foydalanuvchi</th>
+                                <th>Summa</th>
+                                <th>Sana</th>
+                                <th>Holat</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in pending_payments %}
+                            <tr>
+                                <td>{{ payment.user.username }}</td>
+                                <td>{{ payment.amount }} so'm</td>
+                                <td>{{ payment.payment_date|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    {% if payment.status == 'PENDING' %}
+                                        <span class="status-badge status-pending">Kutilmoqda</span>
+                                    {% elif payment.status == 'PAID' %}
+                                        <span class="status-badge status-completed">To'langan</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if payment.status == 'PENDING' %}
+                                    <form method="post" action="{% url 'users:payment_management' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="payment_id" value="{{ payment.id }}">
+                                        <button type="submit" name="action" value="confirm" class="btn btn-success btn-sm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="submit" name="action" value="block" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Hozircha to'lovlar mavjud emas</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ombor xo'jayinlari -->
+        <div class="col-lg-4">
+            <div class="table-container">
+                <h3 class="section-title">Ombor xo'jayinlari</h3>
+                <div class="list-group">
+                    {% for manager in warehouse_managers %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ manager.user.username }}</h6>
+                            <small class="text-muted">{{ manager.user.userprofile.company_name }}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">
+                            {{ manager.user.userrole.warehouse.product_set.count }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        Hozircha ombor xo'jayinlari mavjud emas
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'users:create_warehouse_manager' %}" class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-2"></i>Yangi ombor qo'shish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafiklar -->
+    <div class="row g-4 mt-2">
+        <div class="col-md-6">
+            <div class="table-container">
+                <h3 class="section-title">Oylik daromad</h3>
+                <canvas id="revenueChart" height="250"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="table-container">
+                <h3 class="section-title">Faol foydalanuvchilar</h3>
+                <canvas id="usersChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Daromad grafigi
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun'],
+            datasets: [{
+                label: 'Daromad (mln so\'m)',
+                data: [8.2, 9.5, 10.2, 11.5, 12.0, 12.4],
+                borderColor: '#4361ee',
+                backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+    
+    // Foydalanuvchilar grafigi
+    const usersCtx = document.getElementById('usersChart').getContext('2d');
+    const usersChart = new Chart(usersCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Ombor 1', 'Ombor 2', 'Ombor 3', 'Ombor 4', 'Ombor 5'],
+            datasets: [{
+                label: 'Sotuvchilar soni',
+                data: [5, 8, 3, 6, 4],
+                backgroundColor: '#4895ef',
+                borderColor: '#3f37c9',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

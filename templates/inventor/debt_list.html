@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Qarzdorlik Ro'yxati{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">Qarzdorlik Ro'yxati</h2>
+        <a href="{% url 'inventor:export_debts' %}" class="btn btn-success">
+            <i class="fas fa-download me-2"></i>Eksport
+        </a>
+    </div>
+
+    <!-- Filtrlar -->
+    <div class="table-container mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Sotuvchi</label>
+                <select class="form-select" name="seller">
+                    <option value="">Barchasi</option>
+                    {% for seller in sellers %}
+                    <option value="{{ seller.id }}" {% if request.GET.seller == seller.id|stringformat:"i" %}selected{% endif %}>
+                        {{ seller.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Holati</label>
+                <select class="form-select" name="status">
+                    <option value="">Barchasi</option>
+                    <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Qarzdor</option>
+                    <option value="PARTIAL" {% if request.GET.status == 'PARTIAL' %}selected{% endif %}>Qisman to'langan</option>
+                    <option value="PAID" {% if request.GET.status == 'PAID' %}selected{% endif %}>To'langan</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Sana oralig'i</label>
+                <input type="date" class="form-control" name="date" value="{{ request.GET.date }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-2"></i>Filtrlash
+                </button>
+                <a href="{% url 'inventor:debt_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Tozalash
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Qarzdorliklar jadvali -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Sotuvchi</th>
+                        <th>Mahsulot</th>
+                        <th>Miqdor</th>
+                        <th>Jami summa</th>
+                        <th>To'langan</th>
+                        <th>Qolgan qarz</th>
+                        <th>Holati</th>
+                        <th>Sana</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for debt in debts %}
+                    <tr>
+                        <td>
+                            <strong>{{ debt.seller.username }}</strong>
+                            {% if debt.seller.first_name %}
+                            <br><small class="text-muted">{{ debt.seller.first_name }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ debt.product.name }}</td>
+                        <td>{{ debt.quantity }} {{ debt.product.get_unit_display }}</td>
+                        <td>{{ debt.total_amount }} so'm</td>
+                        <td>{{ debt.paid_amount }} so'm</td>
+                        <td>
+                            <strong class="{% if debt.remaining_debt > 0 %}text-danger{% else %}text-success{% endif %}">
+                                {{ debt.remaining_debt }} so'm
+                            </strong>
+                        </td>
+                        <td>
+                            {% if debt.status == 'PENDING' %}
+                                <span class="badge bg-danger">Qarzdor</span>
+                            {% elif debt.status == 'PARTIAL' %}
+                                <span class="badge bg-warning">Qisman to'langan</span>
+                            {% elif debt.status == 'PAID' %}
+                                <span class="badge bg-success">To'langan</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ debt.debt_date|date:"d.m.Y" }}</td>
+                        <td>
+                            {% if debt.status != 'PAID' %}
+                            <a href="{% url 'inventor:debt_payment' debt.pk %}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-money-bill-wave me-1"></i>To'lash
+                            </a>
+                            {% else %}
+                            <span class="text-muted">To'langan</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            <i class="fas fa-credit-card fa-3x mb-3"></i>
+                            <p>Hozircha qarzdorliklar mavjud emas</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Statistik ma'lumotlar -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Jami qarzlar</h5>
+                    <h2 class="card-text">{{ debts.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Qarzdorlar</h5>
+                    <h2 class="card-text">
+                        {% with pending_count=0 %}
+                            {% for debt in debts %}
+                                {% if debt.status == 'PENDING' %}
+                                    {% add pending_count 1 as pending_count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ pending_count }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Jami qarz summasi</h5>
+                    <h2 class="card-text">
+                        {% with total_debt=0 %}
+                            {% for debt in debts %}
+                                {% add total_debt debt.total_amount as total_debt %}
+                            {% endfor %}
+                            {{ total_debt|floatformat:0 }} so'm
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">To'langan</h5>
+                    <h2 class="card-text">
+                        {% with paid_count=0 %}
+                            {% for debt in debts %}
+                                {% if debt.status == 'PAID' %}
+                                    {% add paid_count 1 as paid_count %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ paid_count }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

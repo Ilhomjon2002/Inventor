@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ supplier.name }} - Statistika{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">
+            <i class="fas fa-chart-line me-2"></i>
+            {{ supplier.name }} - Statistika
+        </h2>
+        <div>
+            <a href="{% url 'inventor:supplier_detail' supplier.pk %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Orqaga
+            </a>
+            <a href="{% url 'inventor:supplier_products' supplier.pk %}" class="btn btn-primary">
+                <i class="fas fa-boxes me-2"></i>Mahsulotlar
+            </a>
+        </div>
+    </div>
+
+    <!-- Asosiy statistikalar -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-boxes"></i>
+                <div class="card-title">Jami mahsulotlar</div>
+                <div class="card-value">{{ products.count }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-truck-loading"></i>
+                <div class="card-title">Jami yetkazib berilgan</div>
+                <div class="card-value">{{ total_delivered }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-money-bill-wave"></i>
+                <div class="card-title">O'rtacha narx</div>
+                <div class="card-value">
+                    {% with total_price=0 %}
+                        {% for product in products %}
+                            {% if product.price %}
+                                {% add total_price product.price as total_price %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if products.count > 0 %}
+                            {{ total_price|div:products.count|floatformat:0 }} so'm
+                        {% else %}
+                            0 so'm
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-chart-bar"></i>
+                <div class="card-title">Faollik darajasi</div>
+                <div class="card-value">
+                    {% widthratio products.count total_products 100 %}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Mahsulotlar bo'yicha statistika -->
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h3 class="section-title">Mahsulotlar bo'yicha statistika</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Mahsulot</th>
+                                <th>Kategoriya</th>
+                                <th>Narxi</th>
+                                <th>Zaxirada</th>
+                                <th>Minimal</th>
+                                <th>Holati</th>
+                                <th>Qiymati</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.category.name }}</td>
+                                <td>{{ product.price }} so'm</td>
+                                <td>{{ product.stock_quantity }}</td>
+                                <td>{{ product.min_stock }}</td>
+                                <td>
+                                    {% if product.stock_quantity <= 0 %}
+                                        <span class="badge bg-danger">Tugagan</span>
+                                    {% elif product.is_low_stock %}
+                                        <span class="badge bg-warning">Kamayib ketdi</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if product.price %}
+                                        {{ product.stock_quantity|multiply:product.price|floatformat:0 }} so'm
+                                    {% else %}
+                                        0 so'm
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">
+                                    Mahsulotlar mavjud emas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafik va qo'shimcha ma'lumotlar -->
+        <div class="col-lg-4">
+            <!-- Zaxira holati -->
+            <div class="table-container">
+                <h3 class="section-title">Zaxira holati</h3>
+                <canvas id="stockChart" height="200"></canvas>
+            </div>
+
+            <!-- Eng qimmat mahsulotlar -->
+            <div class="table-container mt-4">
+                <h3 class="section-title">Eng qimmat mahsulotlar</h3>
+                <div class="list-group">
+                    {% for product in products|dictsortreversed:"price"|slice:":5" %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ product.name }}</h6>
+                            <strong>{{ product.price }} so'm</strong>
+                        </div>
+                        <p class="mb-1 text-muted small">{{ product.category.name }}</p>
+                        <small>Zaxirada: {{ product.stock_quantity }}</small>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        Mahsulotlar mavjud emas
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Zaxira holati grafigi
+    const stockCtx = document.getElementById('stockChart').getContext('2d');
+    const stockChart = new Chart(stockCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Normal', 'Kam zaxirada', 'Tugagan'],
+            datasets: [{
+                data: [
+                    {% with normal=0 low=0 out=0 %}
+                        {% for product in products %}
+                            {% if product.stock_quantity == 0 %}
+                                {% add out 1 as out %}
+                            {% elif product.is_low_stock %}
+                                {% add low 1 as low %}
+                            {% else %}
+                                {% add normal 1 as normal %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ normal }}, {{ low }}, {{ out }}
+                    {% endwith %}
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#ffc107',
+                    '#dc3545'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

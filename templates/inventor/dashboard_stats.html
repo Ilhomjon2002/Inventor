@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block title %}Umumiy Statistika{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            Umumiy Statistika
+        </h2>
+        <div class="btn-group">
+            <a href="{% url 'inventor:sales_statistics' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-2"></i>Sotuv statistikasi
+            </a>
+            <a href="{% url 'inventor:inventory_statistics' %}" class="btn btn-outline-success">
+                <i class="fas fa-boxes me-2"></i>Zaxira statistikasi
+            </a>
+        </div>
+    </div>
+
+    <!-- Asosiy ko'rsatkichlar -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-warehouse"></i>
+                <div class="card-title">Omborlar soni</div>
+                <div class="card-value">{{ total_warehouses }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-boxes"></i>
+                <div class="card-title">Jami mahsulotlar</div>
+                <div class="card-value">{{ total_products }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-exchange-alt"></i>
+                <div class="card-title">Tranzaksiyalar</div>
+                <div class="card-value">{{ total_transactions }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card">
+                <i class="fas fa-money-bill-wave"></i>
+                <div class="card-title">Jami daromad</div>
+                <div class="card-value">{{ total_revenue|floatformat:0 }} so'm</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Oylik daromad -->
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h3 class="section-title">Oylik daromad</h3>
+                <canvas id="monthlyRevenueChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Zaxira holati -->
+        <div class="col-lg-4">
+            <div class="table-container">
+                <h3 class="section-title">Zaxira holati</h3>
+                <canvas id="stockStatusChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Qo'shimcha statistikalar -->
+    <div class="row g-4 mt-2">
+        <!-- Eng ko'p sotilgan mahsulotlar -->
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h3 class="section-title">Eng ko'p sotilgan mahsulotlar</h3>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Mahsulot</th>
+                                <th>Sotilgan</th>
+                                <th>Daromad</th>
+                                <th>Foiz</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.total_sold }} dona</td>
+                                <td>{{ product.total_revenue|floatformat:0 }} so'm</td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ product.percentage }}%"
+                                             aria-valuenow="{{ product.percentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small>{{ product.percentage|floatformat:1 }}%</small>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    Ma'lumotlar mavjud emas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faol foydalanuvchilar -->
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h3 class="section-title">Faol foydalanuvchilar</h3>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Foydalanuvchi</th>
+                                <th>Tranzaksiyalar</th>
+                                <th>Sotuvlar</th>
+                                <th>Daromad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in active_users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2">
+                                            {{ user.username|first|upper }}
+                                        </div>
+                                        {{ user.username }}
+                                    </div>
+                                </td>
+                                <td>{{ user.transaction_count }}</td>
+                                <td>{{ user.sales_count }}</td>
+                                <td>{{ user.revenue|floatformat:0 }} so'm</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    Ma'lumotlar mavjud emas
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tezkor hisobotlar -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="section-title mb-0">Tezkor hisobotlar</h3>
+                    <a href="{% url 'inventor:report_generate' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Yangi hisobot
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">Kunlik</h5>
+                                <p class="card-text">Bugun</p>
+                                <a href="{% url 'inventor:report_generate' %}?type=daily" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-download me-1"></i>Yuklab olish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">Haftalik</h5>
+                                <p class="card-text">Oxirgi 7 kun</p>
+                                <a href="{% url 'inventor:report_generate' %}?type=weekly" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-download me-1"></i>Yuklab olish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">Oylik</h5>
+                                <p class="card-text">Shu oy</p>
+                                <a href="{% url 'inventor:report_generate' %}?type=monthly" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-download me-1"></i>Yuklab olish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">Yillik</h5>
+                                <p class="card-text">Shu yil</p>
+                                <a href="{% url 'inventor:report_generate' %}?type=yearly" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-download me-1"></i>Yuklab olish
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Oylik daromad grafigi
+    const revenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'],
+            datasets: [{
+                label: 'Daromad (mln so\'m)',
+                data: [12, 19, 15, 17, 14, 16, 18, 20, 22, 19, 21, 23],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' mln';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Zaxira holati grafigi
+    const stockCtx = document.getElementById('stockStatusChart').getContext('2d');
+    const stockChart = new Chart(stockCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Normal', 'Kam zaxirada', 'Tugagan'],
+            datasets: [{
+                data: [65, 25, 10],
+                backgroundColor: [
+                    '#28a745',
+                    '#ffc107',
+                    '#dc3545'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

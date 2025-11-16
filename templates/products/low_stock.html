@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kam Qolgan Mahsulotlar - Inventor Boshqaruvi{% endblock %}
+{% load math_filters %}
+{% block extra_css %}
+<style>
+    .alert-warning-custom {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        color: #856404;
+    }
+    
+    .card-custom {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s;
+        border: none;
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1.25rem 1.5rem;
+        border: none;
+    }
+    
+    .badge-low {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .badge-critical {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .badge-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        color: #212529;
+        padding: 0.35rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .stock-progress {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e9ecef;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+    
+    .stock-progress-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+    
+    .stock-info {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .product-image {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.5rem;
+    }
+    
+    .product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .action-buttons .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+    
+    .critical-row {
+        background-color: #fff5f5 !important;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .warning-row {
+        background-color: #fffbf0 !important;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .unit-badge {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .action-buttons .btn {
+            width: 100%;
+            margin-right: 0;
+        }
+        
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sahifa sarlavhasi -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Kam Qolgan Mahsulotlar</h1>
+            <p class="text-muted mb-0">Zaxirasi kamayib qolgan mahsulotlar ro'yxati</p>
+        </div>
+        <div>
+            <a href="{% url 'users:warehouse_manager_dashboard' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i> Orqaga
+            </a>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary-custom">
+                <i class="fas fa-boxes me-2"></i> Barcha Mahsulotlar
+            </a>
+        </div>
+    </div>
+
+    <!-- Ogohlantirish xabari -->
+    {% if products %}
+    <div class="alert alert-warning-custom d-flex align-items-center mb-4">
+        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">Diqqat! Zaxira kamayib qolgan mahsulotlar</h5>
+            <p class="mb-0">Quyidagi {{ products|length }} ta mahsulotning zaxiradi minimal darajadan past. Tez orada ularni to'ldirish tavsiya etiladi.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistik kartalar -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-custom">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase text-muted mb-0">Jami Mahsulotlar</h6>
+                            <span class="h2 font-weight-bold mb-0">{{ products|length }}</span>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-shape bg-primary text-white rounded-circle shadow">
+                                <i class="fas fa-box"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-custom">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase text-muted mb-0">O'rtacha Kamchilik</h6>
+                            <span class="h2 font-weight-bold mb-0 text-warning">
+                                {{ warning }}
+                            </span>
+                        </div>
+                        <div class="col-auto">
+                            <div class="icon-shape bg-warning text-white rounded-circle shadow">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mahsulotlar jadvali -->
+    <div class="card card-custom">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Kam Qolgan Mahsulotlar Ro'yxati</h5>
+            <span class="badge bg-light text-dark">{{ products|length }} ta mahsulot</span>
+        </div>
+        <div class="card-body">
+            {% if products %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Mahsulot</th>
+                            <th>Kategoriya</th>
+                            <th>Zaxira</th>
+                            <th>Minimal Zaxira</th>
+                            <th>Narx</th>
+                            <th>Holati</th>
+                            <th>Harakatlar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr class="{% if product.stock_quantity <= product.min_stock|divisibleby:2 %}critical-row{% else %}warning-row{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="product-image me-3">
+                                        {% if product.image %}
+                                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                                        {% else %}
+                                            {{ product.name|slice:":1"|upper }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ product.name }}</h6>
+                                        {% if product.barcode %}
+                                            <small class="text-muted">Barkod: {{ product.barcode }}</small>
+                                        {% endif %}
+                                        <div class="mt-1">
+                                            <span class="unit-badge">{{ product.get_unit_display }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if product.category %}
+                                    <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Kategoriya yo'q</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ product.stock_quantity }}</strong>
+                                <div class="stock-progress">
+                                    {% with percentage=product.stock_quantity|divisibleby:product.min_stock|default:100 %}
+                                    <div class="stock-progress-bar 
+                                        {% if percentage <= 25 %}bg-danger
+                                        {% elif percentage <= 50 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                        style="width: {% widthratio product.stock_quantity product.min_stock 100 %}%">
+                                    </div>
+                                    {% endwith %}
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ product.min_stock }}</strong>
+                            </td>
+                            <td>
+                                <strong>{{ product.price }}</strong> so'm
+                            </td>
+                            <td>
+                                {% if product.stock_quantity == 0 %}
+                                    <span class="badge-critical">
+                                        <i class="fas fa-times-circle me-1"></i> Tugagan
+                                    </span>
+                                {% elif product.stock_quantity <= product.min_stock|divisibleby:2 %}
+                                    <span class="badge-critical">
+                                        <i class="fas fa-exclamation-circle me-1"></i> Jiddiy Kam
+                                    </span>
+                                {% else %}
+                                    <span class="badge-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i> Kam
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Bo'sh holat -->
+            <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h4 class="text-muted">Hammasi joyida!</h4>
+                <p class="text-muted mb-4">Hozircha hech qanday mahsulotning zaxiradi kamayib qolmagan.</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-primary-custom">
+                    <i class="fas fa-boxes me-2"></i> Barcha Mahsulotlarni Ko'rish
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Qo'shimcha ma'lumot -->
+    {% if products %}
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card card-custom">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-lightbulb me-2"></i>Tavsiyalar</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Jiddiy kam qolgan mahsulotlarni birinchi navbatda to'ldiring</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Yetkazib beruvchilar bilan bog'lanib, zaxirani yangilang</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Minimal zaxira miqdorlarini qayta ko'rib chiqing</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Muntazam ravishda zaxira monitoringini o'tkazing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-custom">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Statistika</h5>
+                    <div class="stock-info">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Jami kam qolgan mahsulotlar:</span>
+                            <strong>{{ products|length }} ta</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>O'rtacha kamchilik darajasi:</span>
+                            <strong>
+                                {% with total=products|length %}
+                                    {{ total }}%
+                                {% endwith %}
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Oxirgi yangilangan:</span>
+                            <strong>
+                                {% if products %}
+                                    {{ products.0.updated_at|date:"d.m.Y" }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Progress barlarni yangilash
+        function updateProgressBars() {
+            document.querySelectorAll('.stock-progress-bar').forEach(bar => {
+                const width = bar.style.width;
+                // Animatsiya qo'shish
+                bar.style.transition = 'width 1s ease-in-out';
+            });
+        }
+        
+        updateProgressBars();
+        
+        // Filtrlash funksiyalari (agar kerak bo'lsa)
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                filterProducts(filter);
+            });
+        });
+        
+        function filterProducts(filter) {
+            // Bu yerda mahsulotlarni filtrlash logikasi bo'ladi
+            console.log('Filtering by:', filter);
+        }
+        
+        // Avtomatik yangilash (ixtiyoriy)
+        setInterval(() => {
+            // Sahifani yangilash yoki ma'lumotlarni yangilash
+            console.log('Checking for stock updates...');
+        }, 300000); // 5 daqiqa
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Kategoriyalar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0">Mahsulot Kategoriyalari</h2>
+        <a href="{% url 'products:category_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Yangi kategoriya
+        </a>
+    </div>
+
+    <div class="row">
+        {% for category in categories %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <span class="badge bg-primary">{{ category.product_count }} mahsulot</span>
+                    </div>
+                    
+                    <p class="card-text text-muted">
+                        {{ category.description|default:"Tavsif mavjud emas"|truncatewords:15 }}
+                    </p>
+
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {% widthratio category.product_count max_products 100 %}%"
+                             aria-valuenow="{{ category.product_count }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ max_products }}">
+                        </div>
+                    </div>
+
+                    <div class="btn-group w-100">
+                        <a href="{% url 'products:category_edit' category.pk %}" class="btn btn-outline-warning">
+                            <i class="fas fa-edit me-1"></i>Tahrirlash
+                        </a>
+                        <a href="{% url 'products:category_delete' category.pk %}" class="btn btn-outline-danger"
+                           onclick="return confirm('Rostan ham oʻchirmoqchimisiz?')">
+                            <i class="fas fa-trash me-1"></i>O'chirish
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted py-5">
+            <i class="fas fa-tags fa-3x mb-3"></i>
+            <p>Hozircha kategoriyalar mavjud emas</p>
+            <a href="{% url 'products:category_create' %}" class="btn btn-primary">
+                Birinchi kategoriyani yarating
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Statistik ma'lumotlar -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Jami kategoriyalar</h5>
+                    <h2 class="card-text">{{ categories.count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Jami mahsulotlar</h5>
+                    <h2 class="card-text">
+                        {% with total_products=0 %}
+                            {% for category in categories %}
+                                {% add total_products category.product_count as total_products %}
+                            {% endfor %}
+                            {{ total_products }}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h5 class="card-title">O'rtacha mahsulot</h5>
+                    <h2 class="card-text">
+                        {% with total_products=0 %}
+                            {% for category in categories %}
+                                {% add total_products category.product_count as total_products %}
+                            {% endfor %}
+                            {% if categories.count > 0 %}
+                                {{ total_products|div:categories.count|floatformat:1 }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        {% endwith %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Eng ko'p mahsulot</h5>
+                    <h2 class="card-text">{{ max_products }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

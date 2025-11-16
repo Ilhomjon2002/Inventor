@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Hisobot Yaratish{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Hisobot Yaratish
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Hisobot turi -->
+                        <div class="col-12">
+                            <label for="report_type" class="form-label">Hisobot turi *</label>
+                            <select class="form-select" id="report_type" name="report_type" required>
+                                <option value="DAILY">Kunlik hisobot</option>
+                                <option value="WEEKLY">Haftalik hisobot</option>
+                                <option value="MONTHLY">Oylik hisobot</option>
+                                <option value="YEARLY">Yillik hisobot</option>
+                                <option value="CUSTOM">Maxsus oralig'</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Maxsus sana oralig'i -->
+                        <div class="col-md-6 custom-date" style="display: none;">
+                            <label for="start_date" class="form-label">Boshlanish sanasi</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        
+                        <div class="col-md-6 custom-date" style="display: none;">
+                            <label for="end_date" class="form-label">Tugash sanasi</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        
+                        <!-- Hisobot parametrlari -->
+                        <div class="col-12">
+                            <label class="form-label">Qo'shimcha ma'lumotlar</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_sales" id="include_sales" checked>
+                                <label class="form-check-label" for="include_sales">
+                                    Sotuv statistikasi
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_stock" id="include_stock" checked>
+                                <label class="form-check-label" for="include_stock">
+                                    Zaxira holati
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_top_products" id="include_top_products" checked>
+                                <label class="form-check-label" for="include_top_products">
+                                    Eng ko'p sotilgan mahsulotlar
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_debts" id="include_debts">
+                                <label class="form-check-label" for="include_debts">
+                                    Qarzdorlik ma'lumotlari
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Oldindan ko'rish -->
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Hisobot parametrlari</h6>
+                                    <div id="report_preview">
+                                        <p class="text-muted">Hisobot turini tanlang</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'inventor:report_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-file-excel me-2"></i>Hisobot yaratish
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportTypeSelect = document.getElementById('report_type');
+    const customDateFields = document.querySelectorAll('.custom-date');
+    const reportPreview = document.getElementById('report_preview');
+
+    function updatePreview() {
+        const reportType = reportTypeSelect.value;
+        let previewText = '';
+
+        switch(reportType) {
+            case 'DAILY':
+                previewText = '<p><strong>Kunlik hisobot</strong></p><p>Bugungi sana uchun barcha tranzaksiyalar va sotuvlar statistikasi</p>';
+                break;
+            case 'WEEKLY':
+                previewText = '<p><strong>Haftalik hisobot</strong></p><p>Oxirgi 7 kunlik tranzaksiyalar va sotuvlar statistikasi</p>';
+                break;
+            case 'MONTHLY':
+                previewText = '<p><strong>Oylik hisobot</strong></p><p>Shu oy uchun barcha tranzaksiyalar va sotuvlar statistikasi</p>';
+                break;
+            case 'YEARLY':
+                previewText = '<p><strong>Yillik hisobot</strong></p><p>Shu yil uchun barcha tranzaksiyalar va sotuvlar statistikasi</p>';
+                break;
+            case 'CUSTOM':
+                previewText = '<p><strong>Maxsus hisobot</strong></p><p>Tanlangan sana oralig\'i uchun barcha tranzaksiyalar va sotuvlar statistikasi</p>';
+                break;
+        }
+
+        reportPreview.innerHTML = previewText;
+
+        // Maxsus sana maydonlarini ko'rsatish/yashirish
+        if (reportType === 'CUSTOM') {
+            customDateFields.forEach(field => field.style.display = 'block');
+        } else {
+            customDateFields.forEach(field => field.style.display = 'none');
+        }
+    }
+
+    reportTypeSelect.addEventListener('change', updatePreview);
+    updatePreview(); // Dastlabki ko'rinish
+
+    // Bugungi va o'tgan kunni default qilish
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    document.getElementById('start_date').value = yesterday;
+    document.getElementById('end_date').value = today;
+});
+</script>
+{% endblock %}

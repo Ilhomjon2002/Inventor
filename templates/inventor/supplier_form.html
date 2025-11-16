@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if supplier %}Yetkazib Beruvchini Tahrirlash{% else %}Yangi Yetkazib Beruvchi{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas {% if supplier %}fa-edit{% else %}fa-plus{% endif %} me-2"></i>
+                    {% if supplier %}{{ supplier.name }} ni tahrirlash{% else %}Yangi Yetkazib Beruvchi{% endif %}
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Asosiy ma'lumotlar -->
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Nomi *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ supplier.name|default:'' }}" required 
+                                   placeholder="Yetkazib beruvchi nomi">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Telefon raqami</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ supplier.phone|default:'' }}"
+                                   placeholder="+998 XX XXX-XX-XX">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="address" class="form-label">Manzil</label>
+                            <input type="text" class="form-control" id="address" name="address" 
+                                   value="{{ supplier.address|default:'' }}"
+                                   placeholder="Yetkazib beruvchi manzili">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="contact_info" class="form-label">Aloqa ma'lumotlari *</label>
+                            <textarea class="form-control" id="contact_info" name="contact_info" 
+                                      rows="4" required placeholder="Aloqa ma'lumotlari...">{{ supplier.contact_info|default:'' }}</textarea>
+                            <div class="form-text">
+                                Telefon raqamlari, email manzillar, kontakt shaxslar va boshqa aloqa ma'lumotlari
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'inventor:supplier_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if supplier %}Saqlash{% else %}Qo'shish{% endif %}
+                                    </button>
+                                    {% if supplier %}
+                                    <a href="{% url 'inventor:supplier_delete' supplier.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('Rostan ham oʻchirmoqchimisiz?')">
+                                        <i class="fas fa-trash me-2"></i>O'chirish
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Telefon raqamini formatlash
+    const phoneInput = document.getElementById('phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.startsWith('998')) {
+                value = '+' + value;
+            } else if (value.startsWith('8')) {
+                value = '+998' + value.substring(1);
+            }
+            e.target.value = value;
+        });
+    }
+});
+</script>
+{% endblock %}

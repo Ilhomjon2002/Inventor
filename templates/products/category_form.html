@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if category %}Kategoriyani Tahrirlash{% else %}Yangi Kategoriya{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="table-container">
+                <h2 class="section-title">
+                    <i class="fas {% if category %}fa-edit{% else %}fa-plus{% endif %} me-2"></i>
+                    {% if category %}{{ category.name }} ni tahrirlash{% else %}Yangi Kategoriya{% endif %}
+                </h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <!-- Asosiy ma'lumotlar -->
+                        <div class="col-12">
+                            <label for="name" class="form-label">Kategoriya nomi *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ category.name|default:'' }}" required 
+                                   placeholder="Kategoriya nomini kiriting">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="description" class="form-label">Tavsif</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="Kategoriya haqida qisqacha tavsif...">{{ category.description|default:'' }}</textarea>
+                            <div class="form-text">
+                                Kategoriya haqida qo'shimcha ma'lumotlar (ixtiyoriy)
+                            </div>
+                        </div>
+
+                        <!-- Mahsulotlar statistikasi (faqat tahrirlashda) -->
+                        {% if category %}
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Statistika</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-1">Mahsulotlar soni:</p>
+                                            <h5>{{ category.products.count }}</h5>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1">Yaratilgan sana:</p>
+                                            <p>{{ category.created_at|date:"d.m.Y H:i" }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'products:category_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                                </a>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if category %}Saqlash{% else %}Qo'shish{% endif %}
+                                    </button>
+                                    {% if category %}
+                                    <a href="{% url 'products:category_delete' category.pk %}" class="btn btn-danger"
+                                       onclick="return confirm('Rostan ham oʻchirmoqchimisiz?')">
+                                        <i class="fas fa-trash me-2"></i>O'chirish
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Kategoriya nomini tekshirish
+    const nameInput = document.getElementById('name');
+    if (nameInput) {
+        nameInput.addEventListener('blur', function() {
+            if (this.value.length < 2) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

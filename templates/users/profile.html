@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+
+{% block title %}Profil - {{ user.username }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        border: 3px solid white;
+    }
+    
+    .card-profile {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-profile:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header-custom {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eaeaea;
+        padding: 1rem 1.5rem;
+        border-radius: 10px 10px 0 0 !important;
+        font-weight: 600;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .payment-status {
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid;
+    }
+    
+    .debt-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .debt-table th {
+        background-color: #f8f9fa;
+        padding: 0.75rem;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .debt-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .debt-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .debt-table tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Profil sarlavhasi -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar-large me-4">
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    </div>
+                    <div>
+                        <h1 class="h3 mb-1">{{ user.first_name }} {{ user.last_name }}</h1>
+                        <p class="mb-0 opacity-75">@{{ user.username }}</p>
+                        {% if role %}
+                        <span class="badge status-badge mt-2 
+                            {% if role.role == 'ADMIN' %}bg-danger
+                            {% elif role.role == 'WAREHOUSE_MANAGER' %}bg-primary
+                            {% else %}bg-success{% endif %}">
+                            {{ role.get_role_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <p class="mb-1"><strong>Email:</strong> {{ user.email }}</p>
+                {% if role %}
+                <p class="mb-0"><strong>Ro'yxatdan o'tgan:</strong> {{ role.created_at|date:"d.m.Y" }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Asosiy ma'lumotlar -->
+        <div class="col-lg-4">
+            <!-- Shaxsiy ma'lumotlar -->
+            <div class="card card-profile">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-user-circle me-2"></i> Shaxsiy ma'lumotlar
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <div class="text-muted small">Foydalanuvchi nomi</div>
+                        <div class="fw-bold">{{ user.username }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small">Ism</div>
+                        <div class="fw-bold">{{ user.first_name }} {{ user.last_name }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small">Email</div>
+                        <div class="fw-bold">{{ user.email }}</div>
+                    </div>
+                    {% if role %}
+                    <div class="info-item">
+                        <div class="text-muted small">Vazifasi</div>
+                        <div class="fw-bold">{{ role.get_role_display }}</div>
+                    </div>
+                    {% if role.warehouse %}
+                    <div class="info-item">
+                        <div class="text-muted small">Ombor</div>
+                        <div class="fw-bold">{{ role.warehouse.name }}</div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- To'lov holati -->
+            {% if profile %}
+            <div class="card card-profile">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-credit-card me-2"></i> To'lov holati
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <div class="text-muted small">Oylik to'lov</div>
+                        <div class="fw-bold">{{ profile.monthly_payment|floatformat:0|default:"Noma'lum" }} so'm</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small">Oxirgi to'lov</div>
+                        <div class="fw-bold">{{ profile.last_payment_date|date:"d.m.Y"|default:"To'lanmagan" }}</div>
+                    </div>
+                    
+                    <div class="payment-status mt-3 
+                        {% if payment_status.status == 'due' %}bg-danger bg-opacity-10 border-danger
+                        {% else %}bg-success bg-opacity-10 border-success{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <i class="fas 
+                                {% if payment_status.status == 'due' %}fa-exclamation-circle text-danger
+                                {% else %}fa-check-circle text-success{% endif %} me-2"></i>
+                            <div>
+                                <p class="fw-bold mb-1 
+                                    {% if payment_status.status == 'due' %}text-danger
+                                    {% else %}text-success{% endif %}">
+                                    {{ payment_status.message }}
+                                </p>
+                                {% if payment_status.status == 'due' %}
+                                {% with days_left=profile.days_until_block %}
+                                <p class="small mb-0 text-muted">
+                                    To'lov uchun {{ days_left }} kun qoldi. Shundan so'ng tizim bloklanadi.
+                                </p>
+                                {% endwith %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if payment_status.status == 'due' %}
+                    <button class="btn btn-danger w-100 mt-3">
+                        <i class="fas fa-money-bill-wave me-2"></i> To'lov qilish
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Qo'shimcha ma'lumotlar -->
+        <div class="col-lg-8">
+            <!-- Kontakt ma'lumotlari -->
+            {% if profile %}
+            <div class="card card-profile mb-4">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-address-card me-2"></i> Kontakt ma'lumotlari
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="text-muted small">Kompaniya nomi</div>
+                                <div class="fw-bold">{{ profile.company_name|default:"Kiritilmagan" }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="text-muted small">Telefon raqami</div>
+                                <div class="fw-bold">{{ profile.phone|default:"Kiritilmagan" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="text-muted small">Telegram</div>
+                                <div class="fw-bold">{{ profile.telegram|default:"Kiritilmagan" }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="text-muted small">Mijoz statusi</div>
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold {% if profile.is_vip %}text-warning{% else %}text-muted{% endif %}">
+                                        {% if profile.is_vip %}VIP mijoz{% else %}Oddiy mijoz{% endif %}
+                                    </span>
+                                    {% if profile.is_vip %}
+                                    <i class="fas fa-crown text-warning ms-2"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-top text-end">
+                        <button class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i> Ma'lumotlarni tahrirlash
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Qarzlar holati -->
+            {% if debts %}
+            <div class="card card-profile">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-file-invoice-dollar me-2"></i> Qarzlar holati
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="debt-table">
+                            <thead>
+                                <tr>
+                                    <th>Mahsulot</th>
+                                    <th>Miqdor</th>
+                                    <th>Qolgan Qarz</th>
+                                    <th>Holat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for debt in debts %}
+                                <tr>
+                                    <td class="fw-bold">{{ debt.product.name|default:"Noma'lum mahsulot" }}</td>
+                                    <td>{{ debt.quantity }} dona</td>
+                                    <td class="fw-bold text-danger">{{ debt.remaining_debt|floatformat:0 }} so'm</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if debt.status == 'PENDING' %}bg-danger
+                                            {% elif debt.status == 'PARTIAL' %}bg-warning
+                                            {% else %}bg-success{% endif %}">
+                                            {{ debt.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Agar qarzlar bo'lmasa -->
+            {% if role and role.role == 'SELLER' %}
+            <div class="card card-profile">
+                <div class="card-body empty-state">
+                    <i class="fas fa-smile"></i>
+                    <h5 class="mt-2">Qarzlar mavjud emas</h5>
+                    <p class="text-muted">Sizda hal qilinmagan qarzlar mavjud emas.</p>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Tizim ma'lumotlari -->
+            {% if role %}
+            <div class="card card-profile mt-4">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-info-circle me-2"></i> Tizim ma'lumotlari
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="text-muted small">Ro'yxatdan o'tgan sana</div>
+                                <div class="fw-bold">{{ role.created_at|date:"d.m.Y H:i" }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="text-muted small">Foydalanuvchi ID</div>
+                                <div class="fw-bold">{{ user.id }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animatsiya qo'shish
+        const cards = document.querySelectorAll('.card-profile');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // To'lov tugmasi uchun hodisa
+        const paymentButton = document.querySelector('.btn-danger');
+        if (paymentButton) {
+            paymentButton.addEventListener('click', function() {
+                alert('To\'lov tizimiga yo\'naltirilmoqda...');
+                // Bu yerda haqiqiy to'lov tizimiga yo'naltirish logikasi bo'ladi
+            });
+        }
+        
+        // Tahrirlash tugmasi uchun hodisa
+        const editButton = document.querySelector('.btn-outline-primary');
+        if (editButton) {
+            editButton.addEventListener('click', function() {
+                alert('Profil ma\'lumotlarini tahrirlash sahifasiga yo\'naltirilmoqda...');
+                // Bu yerda profil tahrirlash sahifasiga yo'naltirish logikasi bo'ladi
+            });
+        }
+    });
+</script>
+{% endblock %}
