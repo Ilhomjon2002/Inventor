@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 
-# ✔️ Render uchun to‘g‘rilangan BASE_DIR (3 daraja yuqoriga ko‘tarilgan)
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+# ✔️ Render uchun to‘g‘ri BO‘LGAN BASE_DIR
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-inventory-system-secret-key-2024'
 
@@ -40,8 +40,10 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
 
-        # ✔️ Render to‘g‘ri o‘qishi uchun
-        'DIRS': [BASE_DIR / 'templates'],
+        # ✔️ Render templates ni shu yerdan topadi
+        'DIRS': [
+            BASE_DIR / 'templates'
+        ],
 
         'APP_DIRS': True,
         'OPTIONS': {
@@ -57,13 +59,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'inventory_system.wsgi.application'
 
-# ✔️ SQLite Render uchun to‘g‘ri ishlaydi
+
+# ✔️ SQLite – Renderda ishlayveradi
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -72,30 +76,37 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+
 LANGUAGE_CODE = 'uz'
 TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = True
 
-# ✔️ STATIC settings (Render uchun mos)
+# ✔️ STATIC FILES
 STATIC_URL = '/static/'
+
+# local develop — static papka ishlaydi
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+# Render deployment — collectstatic shu yerdan ishlaydi
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# ✔️ MEDIA files
+# ✔️ MEDIA FILES
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Login/logout redirects
+
+# Login redirect URLs
 LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/users/login/'
 
-# Celery (Render-da ishlamaydi, lekin settingsda qolsin)
+
+# Celery (Renderda ishlamaydi)
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
