@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 
-SECRET_KEY = 'django-inventory-system-secret-key-2024'
+SECRET_KEY = '&70tjqw7^=w8w45d@oi4o5&(2)6dpm)k18d(dq6gjimpi$1e7s'
 
 DEBUG = True
 
