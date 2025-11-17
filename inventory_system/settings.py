@@ -1,21 +1,10 @@
 import os
 from pathlib import Path
 
+# ✔️ Render uchun to‘g‘rilangan BASE_DIR (3 daraja yuqoriga ko‘tarilgan)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-
-
-# Ishlab chiqarish muhitida ishlashni ta'minlaydi (Renderning o'zi HTTPS ni ta'minlaydi)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Loyihaning ildiz papkasiga yo'l (Renderda ishlatiladi)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-
-
-
-
-SECRET_KEY = '&70tjqw7^=w8w45d@oi4o5&(2)6dpm)k18d(dq6gjimpi$1e7s'
+SECRET_KEY = 'django-inventory-system-secret-key-2024'
 
 DEBUG = True
 
@@ -28,11 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third party apps
-    # 'crispy_forms',
-    # 'django_celery_beat',
-    
+
     # Local apps
     'users',
     'products',
@@ -54,7 +39,10 @@ ROOT_URLCONF = 'inventory_system.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+
+        # ✔️ Render to‘g‘ri o‘qishi uchun
         'DIRS': [BASE_DIR / 'templates'],
+
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,6 +57,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'inventory_system.wsgi.application'
 
+# ✔️ SQLite Render uchun to‘g‘ri ishlaydi
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -77,18 +66,10 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 LANGUAGE_CODE = 'uz'
@@ -96,22 +77,25 @@ TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = True
 
+# ✔️ STATIC settings (Render uchun mos)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# ✔️ MEDIA files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
+# Login/logout redirects
 LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/users/login/'
 
-# Celery Configuration
+# Celery (Render-da ishlamaydi, lekin settingsda qolsin)
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
