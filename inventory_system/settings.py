@@ -1,7 +1,19 @@
 import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+
+# Ishlab chiqarish muhitida ishlashni ta'minlaydi (Renderning o'zi HTTPS ni ta'minlaydi)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Loyihaning ildiz papkasiga yo'l (Renderda ishlatiladi)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+
+
+
 
 SECRET_KEY = 'django-inventory-system-secret-key-2024'
 
