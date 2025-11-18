@@ -407,7 +407,7 @@ def seller_statistics(request, seller_id):
 @seller_required
 def seller_dashboard(request):
     warehouse = request.user.userrole.warehouse
-    products = Product.objects.filter(warehouse=warehouse, stock_quantity__gt=0)
+    products = Product.objects.filter(warehouse=warehouse)
     
     # Sotuvchi tarixi
     my_transactions = Transaction.objects.filter(user=request.user).order_by('-date')[:10]

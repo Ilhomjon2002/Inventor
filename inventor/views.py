@@ -421,7 +421,7 @@ def report_generate(request):
 
 @login_required
 def report_list(request):
-    reports = Report.objects.all().order_by('-generated_at')
+    reports = Report.objects.filter(user=request.user).order_by('-generated_at')
     UserLog.objects.create(user=request.user, action="Hisobotlar ro'yxatini ko'rdi")
     return render(request, 'inventor/report_list.html', {'reports': reports})
 

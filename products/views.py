@@ -23,7 +23,7 @@ def product_list(request):
         if role == 'WAREHOUSE_MANAGER':
             products = products.filter(warehouse=warehouse)
         elif role == 'SELLER':
-            products = products.filter(warehouse=warehouse, stock_quantity__gt=0)
+            products = products.filter(warehouse=warehouse)
     except:
         pass
     
