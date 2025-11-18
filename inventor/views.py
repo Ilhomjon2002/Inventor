@@ -103,7 +103,8 @@ def transaction_history(request):
     
     # Filter parametrlarini olish
     transaction_type = request.GET.get('type')
-    warehouse_id = request.GET.get('warehouse')
+    # warehouse_id = request.GET.get('warehouse')
+    warehouse_id = request.user.userrole.warehouse.id
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     
@@ -125,22 +126,32 @@ def transaction_history(request):
     
     # Statistikani hisoblash (pagination dan oldin)
     total_count = transactions.count()
-    in_count = transactions.filter(transaction_type='IN').count()
-    out_sale_count = transactions.filter(transaction_type='OUT_SALE').count()
+    # in_count = transactions.filter(transaction_type='IN').count()
+    # out_sale_count = transactions.filter(transaction_type='OUT_SALE').count()
     
-    # Daromadni hisoblash
-    total_revenue = 0
+    # Jami kirimni hisoblash
+    out_sale_count = 0
     sale_transactions = transactions.filter(transaction_type='OUT_SALE')
     for transaction in sale_transactions:
         if transaction.product and transaction.product.price:
-            total_revenue += transaction.quantity * transaction.product.price
+            out_sale_count += transaction.quantity * transaction.product.price
+
+    # Jami chiqimni hisoblash
+    in_count = 0
+    sale_transactions = transactions.filter(transaction_type='IN')
+    for transaction in sale_transactions:
+        if transaction.product and transaction.product.price:
+            in_count += transaction.quantity * transaction.product.price
+    
+    # Daromadni hisoblash
+    total_revenue = out_sale_count-in_count
     
     # Pagination
     paginator = Paginator(transactions, 50)  # 50 ta element har bir sahifada
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    warehouses = Warehouse.objects.all()
+    warehouses = request.user.userrole.warehouse
     
     UserLog.objects.create(user=request.user, action="Tranzaksiya tarixini ko'rdi")
     
@@ -148,7 +159,7 @@ def transaction_history(request):
         'transactions': page_obj,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
-        'warehouses': warehouses,
+        'warehouse': warehouses,
         'stats': {
             'total_count': total_count,
             'in_count': in_count,

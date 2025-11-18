@@ -34,11 +34,9 @@
                     <label class="form-label">Ombor</label>
                     <select class="form-select" name="warehouse">
                         <option value="">Barchasi</option>
-                        {% for warehouse in warehouses %}
                         <option value="{{ warehouse.id }}" {% if request.GET.warehouse == warehouse.id|stringformat:"i" %}selected{% endif %}>
                             {{ warehouse.name }}
                         </option>
-                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
