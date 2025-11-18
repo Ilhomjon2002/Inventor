@@ -87,7 +87,7 @@ def transaction_create(request):
         
         UserLog.objects.create(user=request.user, action=f"Tranzaksiya amalga oshirdi: {transaction}")
         messages.success(request, "Tranzaksiya muvaffaqiyatli amalga oshirildi!")
-        return redirect('transaction_history')
+        return redirect('inventor:transaction_history')
     
     products = Product.objects.all()
     warehouses = Warehouse.objects.all()

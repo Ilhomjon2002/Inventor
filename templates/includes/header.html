@@ -43,10 +43,12 @@
                 <i class="fas fa-boxes"></i>
                 <span>Mahsulotlar</span>
             </a>
+            {% if user.userrole.role == 'ADMIN' %}
             <a class="nav-link" href="{% url 'inventor:warehouse_list' %}">
                 <i class="fas fa-warehouse"></i>
                 <span>Omborlar</span>
             </a>
+            {% endif %}
             <a class="nav-link" href="{% url 'inventor:transaction_history' %}">
                 <i class="fas fa-exchange-alt"></i>
                 <span>Tranzaksiyalar</span>
@@ -56,7 +58,7 @@
                 <span>Hisobotlar</span>
             </a>
             
-            {% if user.userrole.role == 'ADMIN' or user.userrole.role == 'WAREHOUSE_MANAGER' %}
+            {% if user.userrole.role == 'ADMIN' %}
                 <a class="nav-link" href="{% url 'inventor:supplier_list' %}">
                     <i class="fas fa-truck"></i>
                     <span>Yetkazib beruvchilar</span>
@@ -85,9 +87,9 @@
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <div class="user-avatar me-3">
+                            <!-- <div class="user-avatar me-3">
                                 {{ user.username|first|upper }}
-                            </div>
+                            </div> -->
                             {{ user.username }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
