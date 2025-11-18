@@ -183,7 +183,7 @@ def transaction_history(request):
             in_count += transaction.quantity * transaction.product.price
     
     # Daromadni hisoblash
-    total_revenue = out_sale_count-in_count
+    total_revenue = in_count-out_sale_count
     
     # Pagination
     paginator = Paginator(transactions, 50)  # 50 ta element har bir sahifada
