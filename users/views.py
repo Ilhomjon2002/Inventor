@@ -324,14 +324,14 @@ def create_seller(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         first_name = request.POST.get('first_name')
-        phone = request.POST.get('phone')
+        # phone = request.POST.get('phone')
         
         # 1. Login bandligini tekshirish (bu tranzaksiyadan tashqarida ham xavfsiz)
         if User.objects.filter(username=username).exists():
             messages.error(request, "Ushbu login band!")
             # Tranzaksiya ichida bo'lgani uchun, agar bu yerda redirect qilsa, 
             # bazaga hech narsa yozilmagan bo'ladi.
-            return redirect('create_seller')
+            return redirect('users:create_seller')
         
         # 2. User yaratish
         # Agar bu qatordan keyingi har qanday qator xato bersa, yaratilgan user o'chiriladi.
@@ -342,7 +342,7 @@ def create_seller(request):
         )
         
         # 3. Profil yaratish
-        UserProfile.objects.create(user=user, phone=phone)
+        # UserProfile.objects.create(user=user)
         
         # 4. Rol berish
         UserRole.objects.create(
@@ -358,7 +358,7 @@ def create_seller(request):
         )
         
         messages.success(request, "Sotuvchi muvaffaqiyatli yaratildi!")
-        return redirect('warehouse_manager_dashboard')
+        return redirect('users:warehouse_manager_dashboard')
     
     return render(request, 'users/create_seller.html')
 
@@ -400,7 +400,7 @@ def seller_statistics(request, seller_id):
         'start_date': start_date.strftime('%Y-%m-%d') if start_date else '',
         'end_date': end_date.strftime('%Y-%m-%d') if end_date else '',
     }
-    return render(request, 'warehouse_manager/seller_statistics.html', context)
+    return render(request, 'users/seller_statistics.html', context)
 
 # Sotuvchi views
 @login_required

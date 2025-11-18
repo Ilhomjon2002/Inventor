@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ seller.first_name }} - Sotuvchi Statistikasi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .stat-card.danger {
+        border-left-color: #dc3545;
+    }
+    
+    .stat-card.success {
+        border-left-color: #28a745;
+    }
+    
+    .stat-card.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .stat-card.info {
+        border-left-color: #17a2b8;
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .seller-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .seller-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+        font-weight: 600;
+        margin-right: 1.5rem;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: var(--dark-text);
+        background-color: #f8f9fa;
+    }
+    
+    .badge-success {
+        background-color: #28a745;
+    }
+    
+    .badge-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .badge-danger {
+        background-color: #dc3545;
+    }
+    
+    .badge-info {
+        background-color: #17a2b8;
+    }
+    
+    .date-filter-form .form-control {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .date-filter-form .btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: var(--dark-text);
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
+    .currency {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Sahifa sarlavhasi -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Sotuvchi Statistikasi</h1>
+            <p class="text-muted mb-0">{{ seller.first_name }} - faoliyat ko'rsatkichlari</p>
+        </div>
+        <a href="{% url 'users:warehouse_manager_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Orqaga
+        </a>
+    </div>
+
+    <!-- Sotuvchi ma'lumotlari -->
+    <div class="seller-info-card">
+        <div class="d-flex align-items-center">
+            <div class="seller-avatar">
+                {{ seller.first_name|slice:":1" }}
+            </div>
+            <div>
+                <h3 class="mb-1">{{ seller.first_name }}</h3>
+                <p class="text-muted mb-1">
+                    <i class="fas fa-user me-2"></i>{{ seller.username }}
+                </p>
+                {% if seller.userprofile.phone %}
+                <p class="text-muted mb-0">
+                    <i class="fas fa-phone me-2"></i>{{ seller.userprofile.phone }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtr qismi -->
+    <div class="filter-card">
+        <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Ma'lumotlarni Filtrlash</h5>
+        <form method="GET" class="date-filter-form">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="start_date" class="form-label">Boshlanish sanasi</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ start_date }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="end_date" class="form-label">Tugash sanasi</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ end_date }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i> Filtrlash
+                    </button>
+                    <a href="{% url 'users:seller_statistics' seller.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo me-2"></i> Tozalash
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistik ko'rsatkichlar -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-card success">
+                <div class="stat-value">{{ total_sales }}</div>
+                <div class="stat-label">Jami Savdolar</div>
+                <div class="mt-2">
+                    <i class="fas fa-shopping-cart text-success"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card info">
+                <div class="stat-value">{{ total_quantity }}</div>
+                <div class="stat-label">Jami Mahsulot Miqdori</div>
+                <div class="mt-2">
+                    <i class="fas fa-boxes text-info"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value currency">{{ total_revenue|floatformat:0 }} so'm</div>
+                <div class="stat-label">Jami Tushum</div>
+                <div class="mt-2">
+                    <i class="fas fa-money-bill-wave text-primary"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card {% if total_debt > 0 %}danger{% else %}success{% endif %}">
+                <div class="stat-value currency">{{ total_debt|floatformat:0 }} so'm</div>
+                <div class="stat-label">Jami Qarz</div>
+                <div class="mt-2">
+                    <i class="fas fa-file-invoice-dollar {% if total_debt > 0 %}text-danger{% else %}text-success{% endif %}"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaksiyalar ro'yxati -->
+    <div class="table-container">
+        <h5 class="section-title">
+            <i class="fas fa-exchange-alt me-2"></i>Transaksiyalar
+        </h5>
+        
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Sana</th>
+                        <th>Mahsulot</th>
+                        <th>Turi</th>
+                        <th>Miqdor</th>
+                        <th>Narx</th>
+                        <th>Summa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date|date:"d.m.Y H:i" }}</td>
+                        <td>{{ transaction.product.name }}</td>
+                        <td>
+                            {% if transaction.transaction_type == 'OUT_SALE' %}
+                                <span class="badge badge-success">Sotuv</span>
+                            {% else %}
+                                <span class="badge badge-info">{{ transaction.get_transaction_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.quantity }}</td>
+                        <td class="currency">{{ transaction.product.price|floatformat:0 }} so'm</td>
+                        <td class="currency">{{ transaction.total_amount|floatformat:0 }} so'm</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-exchange-alt"></i>
+            </div>
+            <h4>Transaksiyalar topilmadi</h4>
+            <p>Tanlangan sana oralig'ida hech qanday transaksiya amalga oshirilmagan</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Qarzdorliklar -->
+    <div class="table-container">
+        <h5 class="section-title">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Qarzdorliklar
+        </h5>
+        
+        {% if debts %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Mahsulot</th>
+                        <th>Miqdor</th>
+                        <th>Jami Summa</th>
+                        <th>To'langan</th>
+                        <th>Qolgan</th>
+                        <th>Holati</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for debt in debts %}
+                    <tr>
+                        <td>{{ debt.product.name }}</td>
+                        <td>{{ debt.quantity }}</td>
+                        <td class="currency">{{ debt.total_amount|floatformat:0 }} so'm</td>
+                        <td class="currency">{{ debt.paid_amount|floatformat:0 }} so'm</td>
+                        <td class="currency">{{ debt.remaining_debt|floatformat:0 }} so'm</td>
+                        <td>
+                            {% if debt.status == 'PAID' %}
+                                <span class="badge badge-success">To'langan</span>
+                            {% elif debt.status == 'PARTIAL' %}
+                                <span class="badge badge-warning">Qisman to'langan</span>
+                            {% else %}
+                                <span class="badge badge-danger">Qarzdor</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <h4>Qarzdorliklar topilmadi</h4>
+            <p>Sotuvchining hech qanday qarzdorligi mavjud emas</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bugungi va o'tgan haftani avtomatik to'ldirish
+        const today = new Date();
+        const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        
+        // Agar sana inputlari bo'sh bo'lsa, avtomatik to'ldirish
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        if (!startDateInput.value) {
+            startDateInput.value = formatDate(lastWeek);
+        }
+        
+        if (!endDateInput.value) {
+            endDateInput.value = formatDate(today);
+        }
+        
+        // Sana validatsiyasi
+        const form = document.querySelector('.date-filter-form');
+        form.addEventListener('submit', function(e) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate > endDate) {
+                e.preventDefault();
+                alert('Boshlanish sanasi tugash sanasidan keyin bo\'lishi mumkin emas!');
+                return false;
+            }
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}
