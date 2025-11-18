@@ -222,7 +222,17 @@ def product_search(request):
 
 @login_required
 def low_stock_products(request):
-    products = Product.objects.filter(stock_quantity__lte=F('min_stock'))
+    products = Product.objects.all()
+
+    try:
+        role = request.user.userrole.role
+        warehouse = request.user.userrole.warehouse
+        if role == 'WAREHOUSE_MANAGER':
+            products = products.filter(warehouse=warehouse, stock_quantity__lte=F('min_stock'))
+        elif role == 'SELLER':
+            products = products.filter(warehouse=warehouse, stock_quantity__gt=0)
+    except:
+        pass
     return render(request, 'products/low_stock.html', {'products': products})
 
 @login_required
