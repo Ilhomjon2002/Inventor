@@ -135,7 +135,10 @@ import datetime
 @login_required
 def transaction_history(request):
     # Boshlang'ich so'rov
-    transactions = Transaction.objects.all().order_by('-date')
+    if request.user.userrole.role == 'WAREHOUSE_MANAGER':
+        transactions = Transaction.objects.all().order_by('-date')
+    else:
+        transactions = Transaction.objects.filter(user=request.user).order_by('-date')
     
     # Filter parametrlarini olish
     transaction_type = request.GET.get('type')
