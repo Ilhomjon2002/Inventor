@@ -16,6 +16,12 @@ from decimal import Decimal, InvalidOperation
 import json
 from django.core.paginator import Paginator
 from django.db.models import Q
+import os
+import json
+from django.core import serializers
+from django.db import connection
+import tempfile
+from django.views.decorators.csrf import csrf_protect
 # from datetime import datetame
 
 @login_required
@@ -492,6 +498,241 @@ def backup_database(request):
         messages.error(request, f"Zaxira nusxa yaratishda xato: {str(e)}")
     
     return redirect('inventor:settings_update')
+
+
+import subprocess
+from django.conf import settings
+
+@login_required
+def backup_database(request):
+    try:
+        # Ma'lumotlar bazasi sozlamalari
+        db_settings = settings.DATABASES['default']
+        db_name = db_settings['NAME']
+        db_user = db_settings['USER']
+        db_pass = db_settings['PASSWORD']
+        db_host = db_settings['HOST']
+        db_port = db_settings['PORT']
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"backup_{timestamp}.sql"
+
+        # PostgreSQL uchun
+        # pg_dump ni chaqiramiz
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.sql', delete=False) as temp_file:
+            command = f"pg_dump -U {db_user} -h {db_host} -p {db_port} {db_name}"
+            # Parolni environment orqali beramiz
+            env = os.environ.copy()
+            env['PGPASSWORD'] = db_pass
+            process = subprocess.Popen(command, shell=True, stdout=temp_file, env=env)
+            process.wait()
+
+        # Faylni o'qib, HttpResponse ga yozamiz
+        with open(temp_file.name, 'rb') as f:
+            response = HttpResponse(f.read(), content_type='application/sql')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        os.unlink(temp_file.name)
+
+        # Sozlamalarni yangilaymiz
+        settings_obj, created = Setting.objects.get_or_create(id=1)
+        settings_obj.last_backup = datetime.now()
+        settings_obj.save()
+
+        UserLog.objects.create(user=request.user, action="Ma'lumotlar bazasini zaxiraladi")
+        messages.success(request, "Ma'lumotlar bazasi muvaffaqiyatli zaxiralandi va yuklab olindi!")
+        return response
+
+    except Exception as e:
+        messages.error(request, f"Zaxiralashda xatolik: {str(e)}")
+        return redirect('inventor:settings')
+
+
+@login_required
+def download_database_file(request):
+    """
+    SQLite ma'lumotlar bazasi faylini to'g'ridan-to'g'ri yuklab olish
+    """
+    try:
+        # SQLite ma'lumotlar bazasi fayl yo'lini olish
+        db_path = django_settings.DATABASES['default']['NAME']
+        
+        # Fayl mavjudligini tekshirish
+        if not os.path.exists(db_path):
+            messages.error(request, "Ma'lumotlar bazasi fayli topilmadi!")
+            return redirect('inventor:settings')
+        
+        # Faylni o'qish
+        with open(db_path, 'rb') as db_file:
+            # Response yaratish
+            timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"database_backup_{timestamp}.db"
+            
+            response = HttpResponse(db_file.read(), content_type='application/x-sqlite3')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            response['Content-Length'] = os.path.getsize(db_path)
+        
+        # Log yozish
+        UserLog.objects.create(
+            user=request.user, 
+            action="SQLite ma'lumotlar bazasini yuklab oldi"
+        )
+        
+        messages.success(request, "Ma'lumotlar bazasi fayli muvaffaqiyatli yuklab olindi!")
+        return response
+        
+    except Exception as e:
+        messages.error(request, f"Yuklab olishda xatolik: {str(e)}")
+        return redirect('inventor:settings')
+
+
+@login_required
+@csrf_protect
+def download_database_backup(request):
+    """
+    Ma'lumotlar bazasini JSON formatida yuklab olish
+    """
+    try:
+        # Barcha modellarni olish
+        from django.apps import apps
+        models = apps.get_models()
+        
+        # Ma'lumotlarni to'plash
+        backup_data = {}
+        
+        for model in models:
+            # Django ning built-in modellarini o'tkazib yuborish
+            if model._meta.app_label in ['auth', 'contenttypes', 'sessions', 'admin']:
+                continue
+                
+            model_name = f"{model._meta.app_label}_{model._meta.model_name}"
+            try:
+                data = serializers.serialize('json', model.objects.all())
+                backup_data[model_name] = json.loads(data)
+            except Exception as e:
+                print(f"Xatolik {model_name} uchun: {str(e)}")
+                continue
+        
+        # JSON fayl yaratish
+        timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"database_backup_{timestamp}.json"
+        
+        # Response yaratish
+        response = HttpResponse(
+            json.dumps(backup_data, indent=2, ensure_ascii=False),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Log yozish
+        UserLog.objects.create(
+            user=request.user, 
+            action="Ma'lumotlar bazasini yuklab oldi"
+        )
+        
+        messages.success(request, "Ma'lumotlar bazasi muvaffaqiyatli yuklab olindi!")
+        return response
+        
+    except Exception as e:
+        messages.error(request, f"Yuklab olishda xatolik: {str(e)}")
+        return redirect('inventor:settings')
+
+
+@login_required
+@csrf_protect
+def download_sql_backup(request):
+    """
+    Ma'lumotlar bazasini SQL formatida yuklab olish
+    """
+    try:
+        from django.db import connections
+        import subprocess
+        from django.conf import settings
+        
+        # Vaqt belgisini olish
+        timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"database_backup_{timestamp}.sql"
+        
+        # PostgreSQL uchun (agar ishlatayotgan bo'lsangiz)
+        if settings.DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+            db_name = settings.DATABASES['default']['NAME']
+            db_user = settings.DATABASES['default']['USER']
+            db_pass = settings.DATABASES['default']['PASSWORD']
+            db_host = settings.DATABASES['default']['HOST']
+            db_port = settings.DATABASES['default'].get('PORT', '5432')
+            
+            # pg_dump dan foydalanish
+            import subprocess
+            import os
+            
+            # Environment variable sifatida parolni o'tkazish
+            env = os.environ.copy()
+            env['PGPASSWORD'] = db_pass
+            
+            # SQL dump yaratish
+            cmd = [
+                'pg_dump',
+                '-h', db_host,
+                '-p', db_port,
+                '-U', db_user,
+                '-d', db_name,
+                '--clean',
+                '--if-exists'
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            
+            if result.returncode == 0:
+                response = HttpResponse(
+                    result.stdout,
+                    content_type='application/sql'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                
+                UserLog.objects.create(
+                    user=request.user, 
+                    action="Ma'lumotlar bazasini SQL formatida yuklab oldi"
+                )
+                
+                messages.success(request, "SQL backup muvaffaqiyatli yuklab olindi!")
+                return response
+            else:
+                raise Exception(f"pg_dump xatolik: {result.stderr}")
+        
+        # SQLite uchun
+        elif settings.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+            db_path = settings.DATABASES['default']['NAME']
+            
+            # SQLite ma'lumotlar bazasini o'qish
+            import sqlite3
+            
+            connection = sqlite3.connect(db_path)
+            response = HttpResponse(content_type='application/sql')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            # SQL dump yaratish
+            for line in connection.iterdump():
+                response.write(f"{line}\n")
+            
+            connection.close()
+            
+            UserLog.objects.create(
+                user=request.user, 
+                action="Ma'lumotlar bazasini SQL formatida yuklab oldi"
+            )
+            
+            messages.success(request, "SQL backup muvaffaqiyatli yuklab olindi!")
+            return response
+            
+        else:
+            # Boshqa ma'lumotlar bazalari uchun JSON formatida qaytarish
+            return download_database_backup(request)
+            
+    except Exception as e:
+        messages.error(request, f"SQL yuklab olishda xatolik: {str(e)}")
+        return redirect('inventor:settings')
+
+
 
 @login_required
 @admin_required

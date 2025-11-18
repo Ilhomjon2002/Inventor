@@ -30,8 +30,8 @@ def product_list(request):
     if query:
         products = products.filter(
             Q(name__icontains=query) |
-            Q(description__icontains=query) |
-            Q(barcode__icontains=query)
+            Q(description__icontains=query)
+            # Q(barcode__icontains=query)
         )
     
     products_with_low_stock = [product for product in products if product.is_low_stock()]
@@ -54,7 +54,7 @@ def product_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
         category_id = request.POST.get('category')
-        barcode = request.POST.get('barcode')
+        # barcode = request.POST.get('barcode')
         description = request.POST.get('description', '')
         price = request.POST.get('price')
         min_stock = request.POST.get('min_stock', 0)
@@ -71,7 +71,7 @@ def product_create(request):
         product = Product.objects.create(
             name=name,
             category=category,
-            barcode=barcode,
+            # barcode=barcode,
             description=description,
             price=price,
             min_stock=min_stock,
@@ -103,7 +103,7 @@ def product_edit(request, pk):
     if request.method == 'POST':
         product.name = request.POST.get('name')
         product.category_id = request.POST.get('category')
-        product.barcode = request.POST.get('barcode')
+        # product.barcode = request.POST.get('barcode')
         product.description = request.POST.get('description', '')
         product.price = request.POST.get('price')
         product.min_stock = request.POST.get('min_stock', 0)
@@ -212,7 +212,7 @@ def product_search(request):
         products = products.filter(
             Q(name__icontains=query) |
             Q(description__icontains=query) |
-            Q(barcode__icontains=query) |
+            # Q(barcode__icontains=query) |
             Q(category__name__icontains=query)
         )
     
@@ -268,7 +268,7 @@ def export_products(request):
     data = {
         'Nomi': [p.name for p in products],
         'Kategoriya': [p.category.name for p in products],
-        'Shtrix-kod': [p.barcode for p in products],
+        # 'Shtrix-kod': [p.barcode for p in products],
         'Tavsif': [p.description for p in products],
         'Narxi': [float(p.price) if p.price else 0 for p in products],
         'Oʻlchov birligi': [p.get_unit_display() for p in products],
@@ -295,54 +295,95 @@ def import_products(request):
         
         imported_count = 0
         updated_count = 0
+        errors = []
         
-        for _, row in df.iterrows():
-            category_name = row.get('Kategoriya', '')
-            if category_name:
-                category, _ = Category.objects.get_or_create(name=category_name)
-            else:
-                category = None
-            
-            warehouse_name = row.get('Ombor', '')
-            warehouse = Warehouse.objects.filter(name=warehouse_name).first() if warehouse_name else None
-            
-            supplier_name = row.get('Yetkazib beruvchi', '')
-            supplier = Supplier.objects.filter(name=supplier_name).first() if supplier_name else None
-            
-            barcode = row.get('Shtrix-kod', '')
-            if barcode and Product.objects.filter(barcode=barcode).exists():
-                # Update existing product
-                product = Product.objects.get(barcode=barcode)
-                product.name = row.get('Nomi', product.name)
-                product.category = category
-                product.description = row.get('Tavsif', product.description)
-                product.price = row.get('Narxi', product.price)
-                product.min_stock = row.get('Minimal zaxira', product.min_stock)
-                product.stock_quantity = row.get('Zaxiradagi miqdor', product.stock_quantity)
-                product.warehouse = warehouse
-                product.supplier = supplier
-                product.save()
-                updated_count += 1
-            else:
-                # Create new product
-                Product.objects.create(
-                    name=row.get('Nomi', ''),
-                    category=category,
-                    barcode=barcode,
-                    description=row.get('Tavsif', ''),
-                    price=row.get('Narxi', 0),
-                    min_stock=row.get('Minimal zaxira', 0),
-                    stock_quantity=row.get('Zaxiradagi miqdor', 0),
-                    warehouse=warehouse,
-                    supplier=supplier
-                )
-                imported_count += 1
+        for index, row in df.iterrows():
+            try:
+                category_name = row.get('Kategoriya', '')
+                if category_name:
+                    category, _ = Category.objects.get_or_create(name=category_name)
+                else:
+                    category = None
+                
+                warehouse_name = row.get('Ombor', '')
+                warehouse = Warehouse.objects.filter(name=warehouse_name).first() if warehouse_name else None
+                
+                supplier_name = row.get('Yetkazib beruvchi', '')
+                supplier = Supplier.objects.filter(name=supplier_name).first() if supplier_name else None
+                
+                product_name = row.get('Nomi', '').strip()
+                if not product_name:
+                    errors.append(f"{index+2}-qatorda mahsulot nomi kiritilmagan")
+                    continue
+                
+                # Mahsulotni nomi va kategoriyasi bo'yicha topish
+                # Agar bir xil nomdagi mahsulotlar bo'lsa, kategoriya bilan aniqlash
+                product_query = Product.objects.filter(name=product_name)
+                if category:
+                    product_query = product_query.filter(category=category)
+                
+                if product_query.exists():
+                    # Mavjud mahsulotni yangilash
+                    product = product_query.first()
+                    product.name = product_name
+                    product.category = category
+                    product.description = row.get('Tavsif', product.description)
+                    product.price = row.get('Narxi', product.price)
+                    product.min_stock = row.get('Minimal zaxira', product.min_stock)
+                    product.stock_quantity = row.get('Zaxiradagi miqdor', product.stock_quantity)
+                    product.warehouse = warehouse
+                    product.supplier = supplier
+                    
+                    # Unit (oʻlchov birligi) ni yangilash
+                    unit = row.get('Oʻlchov birligi', '')
+                    if unit and unit in dict(Product.UNIT_CHOICES):
+                        product.unit = unit
+                    
+                    product.save()
+                    updated_count += 1
+                else:
+                    # Yangi mahsulot yaratish
+                    unit = row.get('Oʻlchov birligi', 'piece')
+                    if unit not in dict(Product.UNIT_CHOICES):
+                        unit = 'piece'
+                    
+                    Product.objects.create(
+                        name=product_name,
+                        category=category,
+                        description=row.get('Tavsif', ''),
+                        price=row.get('Narxi', 0),
+                        min_stock=row.get('Minimal zaxira', 0),
+                        stock_quantity=row.get('Zaxiradagi miqdor', 0),
+                        unit=unit,
+                        warehouse=warehouse,
+                        supplier=supplier
+                    )
+                    imported_count += 1
+                    
+            except Exception as e:
+                errors.append(f"{index+2}-qatorda xatolik: {str(e)}")
+                continue
         
-        UserLog.objects.create(user=request.user, action=f"Mahsulotlarni import qildi: {imported_count} yangi, {updated_count} yangilandi")
-        messages.success(request, f"Mahsulotlar muvaffaqiyatli import qilindi! {imported_count} yangi, {updated_count} yangilandi")
+        # Log yozish
+        UserLog.objects.create(
+            user=request.user, 
+            action=f"Mahsulotlarni import qildi: {imported_count} yangi, {updated_count} yangilandi"
+        )
+        
+        # Xabarlarni ko'rsatish
+        if errors:
+            messages.warning(request, f"Import jarayonida {len(errors)} ta xatolik yuz berdi")
+            # Xatoliklarni sessionga saqlash yoki alohida ko'rsatish
+            request.session['import_errors'] = errors
+        else:
+            messages.success(request, f"Mahsulotlar muvaffaqiyatli import qilindi! {imported_count} yangi, {updated_count} yangilandi")
+        
         return redirect('products:product_list')
     
-    return render(request, 'products/import_products.html')
+    # Xatoliklarni templatega uzatish
+    import_errors = request.session.pop('import_errors', [])
+    return render(request, 'products/import_products.html', {'import_errors': import_errors})
+
 
 @login_required
 def dashboard(request):

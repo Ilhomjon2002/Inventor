@@ -34,6 +34,8 @@ urlpatterns = [
     
     # Sozlamalar URL'lari
     path('settings/', views.settings_update, name='settings_update'),
+    path('settings/backup_database/', views.backup_database, name='backup_database'),
+    path('backup/download-sql/', views.download_database_file, name='download_sql_backup'),
     path('settings/bulk-price-update/', views.bulk_price_update, name='bulk_price_update'),
     path('settings/backup/', views.backup_database, name='backup_database'),
     path('settings/restore/', views.restore_database, name='restore_database'),
