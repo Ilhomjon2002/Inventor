@@ -46,7 +46,8 @@ def product_list(request):
 @login_required
 @warehouse_manager_required
 def product_create(request):
-    warehouses = Warehouse.objects.all()
+    # warehouses = Warehouse.objects.all()
+    warehouses = request.user.userrole.warehouse
     categories = Category.objects.all()
     suppliers = Supplier.objects.all()
     

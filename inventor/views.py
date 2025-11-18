@@ -90,7 +90,7 @@ def transaction_create(request):
         return redirect('inventor:transaction_history')
     
     products = Product.objects.all()
-    warehouses = Warehouse.objects.all()
+    warehouses = request.user.userrole.warehouse
     return render(request, 'inventor/transaction_create.html', {
         'products': products,
         'warehouses': warehouses

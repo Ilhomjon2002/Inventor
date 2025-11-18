@@ -33,9 +33,7 @@
                             <label for="warehouse" class="form-label">Ombor *</label>
                             <select class="form-select" id="warehouse" name="warehouse" required>
                                 <option value="">Omborni tanlang</option>
-                                {% for warehouse in warehouses %}
-                                <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
-                                {% endfor %}
+                                <option value="{{ warehouses.id }}">{{ warehouses.name }}</option>
                             </select>
                         </div>
                         
