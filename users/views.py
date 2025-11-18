@@ -461,7 +461,7 @@ def take_product(request, product_id):
                 quantity=quantity,
                 total_amount=total_amount,
                 paid_amount=0,
-                description=f"Xaridor: {customer_name}" if customer_name else ""
+                # description=f"Xaridor: {request.user.username}"
             )
         
         UserLog.objects.create(
