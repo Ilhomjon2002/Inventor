@@ -434,9 +434,9 @@ def take_product(request, product_id):
         payment_type = request.POST.get('payment_type')
         customer_name = request.POST.get('customer_name', '')
         
-        if product.stock_quantity < quantity:
-            messages.error(request, "Omborda yetarli mahsulot yo'q!")
-            return redirect('users:seller_dashboard')
+        # if product.stock_quantity < quantity:
+        #     messages.error(request, "Omborda yetarli mahsulot yo'q!")
+        #     return redirect('users:seller_dashboard')
         
         # Mahsulotni chiqim qilish
         product.stock_quantity -= quantity
