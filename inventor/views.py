@@ -75,23 +75,51 @@ def transaction_create(request):
         product_id = request.POST.get('product')
         warehouse_id = request.POST.get('warehouse')
         transaction_type = request.POST.get('transaction_type')
-        quantity = int(request.POST.get('quantity'))
+        quantity = request.POST.get('quantity')  # Avval string sifatida olamiz
         description = request.POST.get('description', '')
+        
+        # Quantity ni tekshirish
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            messages.error(request, "Miqdor noto'g'ri formatda kiritilgan!")
+            return redirect('inventor:transaction_create')
         
         product = get_object_or_404(Product, id=product_id)
         warehouse = get_object_or_404(Warehouse, id=warehouse_id)
         
-        # Create transaction
+        # Chiqim tranzaksiyasi uchun zaxiradagi miqdorni tekshirish (faqat manfiy bo'lsa)
+        if transaction_type == 'out' and quantity > 0:
+            if product.stock_quantity < quantity:
+                messages.error(request, f"Zaxiradagi mahsulot miqdori yetarli emas! Mavjud: {product.stock_quantity}")
+                return redirect('inventor:transaction_create')
+        
+        # Kirim tranzaksiyasi uchun manfiy miqdorni tekshirish
+        if transaction_type == 'in' and quantity < 0:
+            messages.warning(request, "Kirim tranzaksiyasi uchun manfiy miqdor kiritildi. Bu zaxiradan mahsulot olib tashlashni anglatadi.")
+        
+        # Tranzaksiyani yaratish
         transaction = Transaction.objects.create(
             product=product,
             warehouse=warehouse,
             transaction_type=transaction_type,
-            quantity=quantity,
+            quantity=quantity,  # Endi manfiy son ham bo'lishi mumkin
             user=request.user,
             description=description
         )
         
-        UserLog.objects.create(user=request.user, action=f"Tranzaksiya amalga oshirdi: {transaction}")
+        # Mahsulot zaxiradagi miqdorini yangilash
+        if transaction_type == 'in':
+            product.stock_quantity += quantity
+        elif transaction_type == 'out':
+            product.stock_quantity -= quantity
+        
+        product.save()
+        
+        UserLog.objects.create(
+            user=request.user, 
+            action=f"Tranzaksiya amalga oshirdi: {transaction}"
+        )
         messages.success(request, "Tranzaksiya muvaffaqiyatli amalga oshirildi!")
         return redirect('inventor:transaction_history')
     
@@ -101,6 +129,8 @@ def transaction_create(request):
         'products': products,
         'warehouses': warehouses
     })
+
+
 import datetime
 @login_required
 def transaction_history(request):
